@@ -52,8 +52,8 @@ public class MappingTest {
         List<DefaultField> defaultFields = Lists.newArrayList();
         filters.put("highway", Lists.newArrayList("bus_stop"));
         exclude.put("public_transport", Lists.newArrayList("platform"));
-        defaultFields.add(DefaultField.TIMESTAMP);
-        defaultFields.add(DefaultField.CHANGESET);
+        defaultFields.add(DefaultField.timestamp);
+        defaultFields.add(DefaultField.changeset);
         fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
         fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
         MappingRule mappingRule = new MappingRule("busstops", filters, exclude, fields,

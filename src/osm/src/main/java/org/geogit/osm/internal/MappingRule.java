@@ -66,7 +66,8 @@ public class MappingRule {
     }
 
     public enum DefaultField {
-        VISIBLE(Boolean.class), TIMESTAMP(Long.class), TAGS(String.class), CHANGESET(Long.class);
+        visible(Boolean.class), timestamp(Long.class), tags(String.class), changeset(Long.class), version(
+                Integer.class), user(String.class);
 
         private Class<?> clazz;
 
@@ -78,14 +79,6 @@ public class MappingRule {
             return clazz;
         }
 
-        public static DefaultField valueFromText(String s) {
-            for (DefaultField df : values()) {
-                if (df.name().toLowerCase().equals(s)) {
-                    return df;
-                }
-            }
-            throw new NoSuchElementException("Unknown default field: " + s);
-        }
     }
 
     /**
@@ -256,8 +249,7 @@ public class MappingRule {
         featureBuilder.set("id", id);
         if (defaultFields != null) {
             for (DefaultField df : defaultFields) {
-                String fieldName = df.name().toLowerCase();
-                featureBuilder.set(fieldName, feature.getProperty(fieldName).getValue());
+                featureBuilder.set(df.name(), feature.getProperty(df.name()).getValue());
             }
         }
         if (!featureType.getGeometryDescriptor().getType().getBinding().equals(Point.class)) {

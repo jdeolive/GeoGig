@@ -117,8 +117,8 @@ public class OSMMapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.LINESTRING));
         fields.put("lit", new AttributeDefinition("lit", FieldType.STRING));
         ArrayList<DefaultField> defaultFields = Lists.newArrayList();
-        defaultFields.add(DefaultField.TIMESTAMP);
-        defaultFields.add(DefaultField.VISIBLE);
+        defaultFields.add(DefaultField.timestamp);
+        defaultFields.add(DefaultField.visible);
         MappingRule mappingRule = new MappingRule("onewaystreets", filter, null, fields,
                 defaultFields);
         List<MappingRule> mappingRules = Lists.newArrayList();

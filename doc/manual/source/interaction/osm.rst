@@ -337,12 +337,14 @@ Apart from the fields that you add to the feature type in your mapping definitio
 
 You can also add fields from the original OSM feature without doing any transformation. To do so, add the names of the fields to add in a list in the ``defaultFields`` entry.
 
-The following fields are available. Notice that the names are case-sensitive.
+The following fields are available. Notice that the names are case-sensitive an have to be in lower case.
 
-* ``TIMESTAMP``
-* ``CHANGESET``
-* ``VISIBLE``
-* ``USER``
+* ``timestamp``
+* ``changeset``
+* ``tags``
+* ``user``
+* ``visible``
+* ``version``
 
 Here's an example of using the ``defaultFields`` entry in the JSON definition. This mapping will add the fields containing the changeset and timestamp of each feature, copying the corresponding value in the original OSM feature, without any transformation.
 
