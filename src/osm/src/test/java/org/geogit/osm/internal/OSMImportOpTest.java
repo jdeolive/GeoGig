@@ -79,7 +79,8 @@ public class OSMImportOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.LINESTRING));
         fields.put("lit", new AttributeDefinition("lit", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("onewaystreets", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("onewaystreets", mappings, filterExclude, fields,
+                null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
@@ -127,7 +128,8 @@ public class OSMImportOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.LINESTRING));
         fields.put("lit", new AttributeDefinition("lit", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("onewaystreets", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("onewaystreets", mappings, filterExclude, fields,
+                null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);

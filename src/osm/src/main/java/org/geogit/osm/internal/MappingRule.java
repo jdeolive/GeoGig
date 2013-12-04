@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.geogit.storage.FieldType;
@@ -29,6 +30,7 @@ import com.google.gson.annotations.Expose;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
@@ -39,6 +41,52 @@ import com.vividsolutions.jts.geom.Polygon;
  * 
  */
 public class MappingRule {
+
+    public enum GeomRestriction {
+        ONLY_OPEN_LINES("open"), ONLY_CLOSED_LINES("closed"), ALL_LINESTRINGS("all");
+
+        private String s;
+
+        GeomRestriction(String s) {
+            this.s = s;
+        }
+
+        public String getModifierString() {
+            return s;
+        }
+
+        public static GeomRestriction valueFromText(String s) {
+            for (GeomRestriction gr : values()) {
+                if (gr.getModifierString().equals(s)) {
+                    return gr;
+                }
+            }
+            throw new NoSuchElementException("Unknown modifier: " + s);
+        }
+    }
+
+    public enum DefaultField {
+        VISIBLE(Boolean.class), TIMESTAMP(Long.class), TAGS(String.class), CHANGESET(Long.class);
+
+        private Class<?> clazz;
+
+        DefaultField(Class<?> clazz) {
+            this.clazz = clazz;
+        }
+
+        public Class<?> getFieldClass() {
+            return clazz;
+        }
+
+        public static DefaultField valueFromText(String s) {
+            for (DefaultField df : values()) {
+                if (df.name().toLowerCase().equals(s)) {
+                    return df;
+                }
+            }
+            throw new NoSuchElementException("Unknown default field: " + s);
+        }
+    }
 
     /**
      * The name of the rule
@@ -67,16 +115,25 @@ public class MappingRule {
     @Expose
     private Map<String, AttributeDefinition> fields;
 
+    /**
+     * The default fields to include in the destination feature type without transforming them
+     */
+    @Expose
+    private List<DefaultField> defaultFields;
+
     private SimpleFeatureType featureType;
 
     private SimpleFeatureBuilder featureBuilder;
 
     private Class<?> geometryType;
 
+    private GeomRestriction geomRestriction;
+
     private static GeometryFactory gf = new GeometryFactory();
 
     public MappingRule(String name, Map<String, List<String>> filter,
-            Map<String, List<String>> filterExclude, Map<String, AttributeDefinition> fields) {
+            Map<String, List<String>> filterExclude, Map<String, AttributeDefinition> fields,
+            List<DefaultField> defaultFields) {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(filter);
         Preconditions.checkNotNull(fields);
@@ -84,6 +141,7 @@ public class MappingRule {
         this.filter = filter;
         this.exclude = filterExclude;
         this.fields = fields;
+        this.defaultFields = defaultFields;
         ArrayList<String> names = Lists.newArrayList();
         for (AttributeDefinition ad : fields.values()) {
             Preconditions.checkState(!names.contains(ad.getName()),
@@ -103,13 +161,18 @@ public class MappingRule {
             SimpleFeatureTypeBuilder fb = new SimpleFeatureTypeBuilder();
             fb.setName(name);
             fb.add("id", Long.class);
+            if (defaultFields != null) {
+                for (DefaultField df : defaultFields) {
+                    fb.add(df.name().toLowerCase(), df.getFieldClass());
+                }
+            }
             Set<String> keys = this.fields.keySet();
             for (String key : keys) {
                 AttributeDefinition field = fields.get(key);
                 Class<?> clazz = field.getType().getBinding();
                 if (Geometry.class.isAssignableFrom(clazz)) {
                     Preconditions.checkArgument(geometryType == null,
-                            "The mapping more than one geometry attribute");
+                            "The mapping has more than one geometry attribute");
                     fb.add(field.getName(), clazz, DefaultGeographicCRS.WGS84);
                     geometryType = clazz;
                 } else {
@@ -130,6 +193,17 @@ public class MappingRule {
 
     }
 
+    private GeomRestriction getGeomRestriction() {
+        if (geomRestriction == null) {
+            if (filter.containsKey("geom")) {
+                geomRestriction = GeomRestriction.valueFromText(filter.get("geom").get(0));
+            } else {
+                geomRestriction = GeomRestriction.ALL_LINESTRINGS;
+            }
+        }
+        return geomRestriction;
+    }
+
     /**
      * Returns the feature resulting from transforming a given feature using this rule
      * 
@@ -144,7 +218,7 @@ public class MappingRule {
 
     /**
      * Returns the feature resulting from transforming a given feature using this rule. This method
-     * takes a colelction of tags, so there is no need to compute them from the 'tags' attribute.
+     * takes a collection of tags, so there is no need to compute them from the 'tags' attribute.
      * This is meant as a faster alternative to the apply(Feature) method, in case the mapping
      * object calling this has already computed the tags, to avoid recomputing them
      * 
@@ -180,6 +254,12 @@ public class MappingRule {
 
         String id = feature.getIdentifier().getID();
         featureBuilder.set("id", id);
+        if (defaultFields != null) {
+            for (DefaultField df : defaultFields) {
+                String fieldName = df.name().toLowerCase();
+                featureBuilder.set(fieldName, feature.getProperty(fieldName).getValue());
+            }
+        }
         if (!featureType.getGeometryDescriptor().getType().getBinding().equals(Point.class)) {
             featureBuilder.set("nodes", feature.getProperty("nodes").getValue());
         }
@@ -198,6 +278,9 @@ public class MappingRule {
             }
             return gf.createPolygon(coords);
         } else {
+            if (geometryType.equals(LineString.class)) {
+
+            }
             return geom;
         }
 
@@ -213,17 +296,33 @@ public class MappingRule {
 
     private boolean hasCompatibleGeometryType(Feature feature) {
         getFeatureType();
+        GeomRestriction restriction = getGeomRestriction();
         GeometryAttribute property = feature.getDefaultGeometryProperty();
-        Object geom = property.getValue();
+        Geometry geom = (Geometry) property.getValue();
         if (geom.getClass().equals(Point.class)) {
             return geometryType == Point.class;
         } else {
-            return !geometryType.equals(Point.class);
+            if (geometryType.equals(Point.class)) {
+                return false;
+            }
+            Coordinate[] coords = geom.getCoordinates();
+            if (geometryType.equals(Polygon.class) && coords.length < 3) {
+                return false;
+            }
+            boolean isClosed = coords[0].equals(coords[coords.length - 1]);
+            if (isClosed && restriction.equals(GeomRestriction.ONLY_OPEN_LINES)) {
+                return false;
+            }
+            if (!isClosed && restriction.equals(GeomRestriction.ONLY_CLOSED_LINES)) {
+                return false;
+            }
+            return true;
         }
     }
 
     private boolean hasCorrectTags(Feature feature, Collection<Tag> tags) {
-        if (filter.isEmpty() && (exclude == null || exclude.isEmpty())) {
+        if (filter.isEmpty() || (filter.size() == 1 && filter.containsKey("geom"))
+                && (exclude == null || exclude.isEmpty())) {
             return true;
         }
         boolean ret = false;
@@ -293,7 +392,7 @@ public class MappingRule {
         if (o instanceof MappingRule) {
             MappingRule m = (MappingRule) o;
             return name.equals(m.name) && m.fields.equals(fields) && m.filter.equals(filter)
-                    && m.exclude.equals(exclude);
+                    && m.exclude.equals(exclude) && m.defaultFields.equals(defaultFields);
         } else {
             return false;
         }

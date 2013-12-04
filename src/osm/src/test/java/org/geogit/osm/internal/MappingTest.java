@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.geogit.osm.cli.commands.OSMMap;
+import org.geogit.osm.internal.MappingRule.DefaultField;
 import org.geogit.storage.FieldType;
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -34,7 +35,8 @@ public class MappingTest {
         fields.put("geom", new AttributeDefinition("name", FieldType.POINT));
         filters.put("highway", new ArrayList<String>());
         try {
-            MappingRule mappingRule = new MappingRule("mapped", filters, filtersExclude, fields);
+            MappingRule mappingRule = new MappingRule("mapped", filters, filtersExclude, fields,
+                    null);
             fail();
         } catch (Exception e) {
             assertTrue(e.getMessage().startsWith("Duplicated"));
@@ -47,11 +49,15 @@ public class MappingTest {
         Map<String, AttributeDefinition> fields = Maps.newHashMap();
         Map<String, List<String>> filters = Maps.newHashMap();
         Map<String, List<String>> exclude = Maps.newHashMap();
+        List<DefaultField> defaultFields = Lists.newArrayList();
         filters.put("highway", Lists.newArrayList("bus_stop"));
         exclude.put("public_transport", Lists.newArrayList("platform"));
+        defaultFields.add(DefaultField.TIMESTAMP);
+        defaultFields.add(DefaultField.CHANGESET);
         fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
         fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
-        MappingRule mappingRule = new MappingRule("busstops", filters, exclude, fields);
+        MappingRule mappingRule = new MappingRule("busstops", filters, exclude, fields,
+                defaultFields);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
