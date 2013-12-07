@@ -7,8 +7,8 @@ package org.geogit.api.plumbing;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.RevFeatureType;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Retrieves the set of property descriptors for the given feature type.
  */
-public class DescribeFeatureType extends AbstractGeoGitOp<ImmutableSet<PropertyDescriptor>> {
+public class DescribeFeatureType extends AbstractGeoGitOp<ImmutableSet<Field>> {
 
     private RevFeatureType featureType;
 
@@ -34,14 +34,14 @@ public class DescribeFeatureType extends AbstractGeoGitOp<ImmutableSet<PropertyD
      * @return a sorted set of all the property descriptors of the feature type.
      */
     @Override
-    public ImmutableSet<PropertyDescriptor> call() {
+    public ImmutableSet<Field> call() {
         Preconditions.checkState(featureType != null, "FeatureType has not been set.");
 
-        FeatureType type = featureType.type();
+        Schema type = featureType.type();
 
-        ImmutableSet.Builder<PropertyDescriptor> propertySetBuilder = new ImmutableSet.Builder<PropertyDescriptor>();
+        ImmutableSet.Builder<Field> propertySetBuilder = new ImmutableSet.Builder<Field>();
 
-        propertySetBuilder.addAll(type.getDescriptors());
+        propertySetBuilder.addAll(type.getFields());
 
         return propertySetBuilder.build();
     }

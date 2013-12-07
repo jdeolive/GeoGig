@@ -78,7 +78,7 @@ public class CatObjectTest extends RepositoryTestCase {
                 .setObject(Suppliers.ofInstance(feature)).call();
         String[] lines = desc.toString().split("\n");
 
-        assertEquals(points1.getProperties().size() + 2, lines.length);
+        assertEquals(points1.list().size() + 2, lines.length);
         assertEquals(FieldType.STRING.name() + "\tStringProp1_1", lines[2]);
         assertEquals(FieldType.INTEGER.name() + "\t1000", lines[3]);
         assertEquals(FieldType.POINT.name() + "\tPOINT (1 1)", lines[4]);

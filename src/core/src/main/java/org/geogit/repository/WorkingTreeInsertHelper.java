@@ -22,9 +22,9 @@ import org.geogit.api.RevTree;
 import org.geogit.api.plumbing.FindOrCreateSubtree;
 import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.storage.ObjectDatabase;
-import org.opengis.feature.Feature;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.geometry.BoundingBox;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Features;
+import org.jeo.feature.Schema;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -65,9 +65,9 @@ class WorkingTreeInsertHelper {
 
         final RevTreeBuilder2 treeBuilder = getTreeBuilder(feature);
 
-        String fid = feature.getIdentifier().getID();
-        BoundingBox bounds = feature.getBounds();
-        FeatureType type = feature.getType();
+        String fid = feature.getId();
+        Envelope bounds = Features.bounds(feature);
+        Schema type = feature.schema();
 
         final Node node = treeBuilder.putFeature(revFeatureId, fid, bounds, type);
         return node;
@@ -78,14 +78,14 @@ class WorkingTreeInsertHelper {
         final String treePath = treePathResolver.apply(feature);
         RevTreeBuilder2 builder = treeBuilders.get(treePath);
         if (builder == null) {
-            final FeatureType type = feature.getType();
+            final Schema type = feature.schema();
             builder = createBuilder(treePath, type);
             treeBuilders.put(treePath, builder);
         }
         return builder;
     }
 
-    private NodeRef findOrCreateTree(final String treePath, final FeatureType type) {
+    private NodeRef findOrCreateTree(final String treePath, final Schema type) {
 
         RevTree tree = commandLocator.command(FindOrCreateSubtree.class).setChildPath(treePath)
                 .setIndex(true).setParent(workHead).setParentPath(NodeRef.ROOT).call();
@@ -104,7 +104,7 @@ class WorkingTreeInsertHelper {
         return new NodeRef(node, parentPath, ObjectId.NULL);
     }
 
-    private RevTreeBuilder2 createBuilder(String treePath, FeatureType type) {
+    private RevTreeBuilder2 createBuilder(String treePath, Schema type) {
 
         final NodeRef treeRef = findOrCreateTree(treePath, type);
         final ObjectId treeId = treeRef.objectId();

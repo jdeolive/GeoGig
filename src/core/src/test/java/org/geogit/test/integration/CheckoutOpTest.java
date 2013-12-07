@@ -27,10 +27,10 @@ import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.ConfigOp;
 import org.geogit.api.porcelain.ConfigOp.ConfigAction;
 import org.geogit.api.porcelain.MergeOp;
+import org.jeo.feature.Feature;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Suppliers;
@@ -75,8 +75,8 @@ public class CheckoutOpTest extends RepositoryTestCase {
         geogit.command(CommitOp.class).setMessage("commit for modified points1").call();
 
         List<String> paths = Arrays.asList(
-                NodeRef.appendChild(pointsName, points1.getIdentifier().getID()),
-                NodeRef.appendChild(linesName, lines1.getIdentifier().getID()));
+                NodeRef.appendChild(pointsName, points1.getId()),
+                NodeRef.appendChild(linesName, lines1.getId()));
 
         RevTree root = repo.getWorkingTree().getTree();
 
@@ -87,11 +87,11 @@ public class CheckoutOpTest extends RepositoryTestCase {
         assertEquals(oID2, featureBlob2.get().getObjectId());
 
         Optional<Node> featureBlob3 = repo.getTreeChild(root,
-                NodeRef.appendChild(linesName, lines2.getIdentifier().getID()));
+                NodeRef.appendChild(linesName, lines2.getId()));
         assertEquals(oID3, featureBlob3.get().getObjectId());
 
         Optional<Node> featureBlob4 = repo.getTreeChild(root,
-                NodeRef.appendChild(linesName, lines3.getIdentifier().getID()));
+                NodeRef.appendChild(linesName, lines3.getId()));
         assertEquals(oID4, featureBlob4.get().getObjectId());
 
         geogit.command(CheckoutOp.class).setSource("master").addPaths(paths).call();
@@ -105,11 +105,11 @@ public class CheckoutOpTest extends RepositoryTestCase {
         assertEquals(oID2, featureBlob2.get().getObjectId());
 
         featureBlob3 = repo.getTreeChild(root,
-                NodeRef.appendChild(linesName, lines2.getIdentifier().getID()));
+                NodeRef.appendChild(linesName, lines2.getId()));
         assertEquals(oID3, featureBlob3.get().getObjectId());
 
         featureBlob4 = repo.getTreeChild(root,
-                NodeRef.appendChild(linesName, lines3.getIdentifier().getID()));
+                NodeRef.appendChild(linesName, lines3.getId()));
         assertEquals(oID4, featureBlob4.get().getObjectId());
 
     }

@@ -14,14 +14,14 @@ import java.util.Map;
 import org.geogit.api.NodeRef;
 import org.geogit.api.RevFeatureType;
 import org.geogit.test.integration.RepositoryTestCase;
-import org.geotools.geometry.jts.WKTReader2;
+import org.jeo.feature.Field;
 import org.junit.Test;
-import org.opengis.feature.type.PropertyDescriptor;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.WKTReader;
 
 public class PatchSerializationTest extends RepositoryTestCase {
 
@@ -32,11 +32,11 @@ public class PatchSerializationTest extends RepositoryTestCase {
     @Test
     public void testRemoveFeatureAttributePatch() throws Exception {
         Patch patch = new Patch();
-        String path = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
-        Map<PropertyDescriptor, AttributeDiff> map = Maps.newHashMap();
-        Optional<?> oldValue = Optional.fromNullable(points1B.getProperty("extra").getValue());
+        String path = NodeRef.appendChild(pointsName, points1.getId());
+        Map<Field, AttributeDiff> map = Maps.newHashMap();
+        Optional<?> oldValue = Optional.fromNullable(points1B.get("extra"));
         GenericAttributeDiffImpl diff = new GenericAttributeDiffImpl(oldValue, null);
-        map.put(modifiedPointsType.getDescriptor("extra"), diff);
+        map.put(modifiedPointsType.field("extra"), diff);
         FeatureDiff featureDiff = new FeatureDiff(path, map,
                 RevFeatureType.build(modifiedPointsType), RevFeatureType.build(pointsType));
         patch.addModifiedFeature(featureDiff);
@@ -47,11 +47,11 @@ public class PatchSerializationTest extends RepositoryTestCase {
     @Test
     public void testAddFeatureAttributePatch() throws Exception {
         Patch patch = new Patch();
-        String path = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
-        Map<PropertyDescriptor, AttributeDiff> map = Maps.newHashMap();
-        Optional<?> newValue = Optional.fromNullable(points1B.getProperty("extra").getValue());
+        String path = NodeRef.appendChild(pointsName, points1.getId());
+        Map<Field, AttributeDiff> map = Maps.newHashMap();
+        Optional<?> newValue = Optional.fromNullable(points1B.get("extra"));
         GenericAttributeDiffImpl diff = new GenericAttributeDiffImpl(null, newValue);
-        map.put(modifiedPointsType.getDescriptor("extra"), diff);
+        map.put(modifiedPointsType.field("extra"), diff);
         FeatureDiff featureDiff = new FeatureDiff(path, map, RevFeatureType.build(pointsType),
                 RevFeatureType.build(modifiedPointsType));
         patch.addModifiedFeature(featureDiff);
@@ -62,16 +62,15 @@ public class PatchSerializationTest extends RepositoryTestCase {
     @Test
     public void testModifyFeatureAttributePatch() throws Exception {
         Patch patch = new Patch();
-        String path = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
-        Map<PropertyDescriptor, AttributeDiff> map = Maps.newHashMap();
-        Optional<?> oldValue = Optional.fromNullable(points1.getProperty("sp").getValue());
+        String path = NodeRef.appendChild(pointsName, points1.getId());
+        Map<Field, AttributeDiff> map = Maps.newHashMap();
+        Optional<?> oldValue = Optional.fromNullable(points1.get("sp"));
         GenericAttributeDiffImpl diff = new GenericAttributeDiffImpl(oldValue, Optional.of("new"));
-        Optional<Geometry> oldGeometry = Optional.fromNullable((Geometry) points1.getProperty("pp")
-                .getValue());
-        Optional<Geometry> newGeometry = Optional.of(new WKTReader2().read("POINT (2 2)"));
+        Optional<Geometry> oldGeometry = Optional.fromNullable((Geometry) points1.get("pp"));
+        Optional<Geometry> newGeometry = Optional.of(new WKTReader().read("POINT (2 2)"));
         GeometryAttributeDiff geomDiff = new GeometryAttributeDiff(oldGeometry, newGeometry);
-        map.put(pointsType.getDescriptor("sp"), diff);
-        map.put(pointsType.getDescriptor("pp"), geomDiff);
+        map.put(pointsType.field("sp"), diff);
+        map.put(pointsType.field("pp"), geomDiff);
         FeatureDiff feaureDiff = new FeatureDiff(path, map, RevFeatureType.build(pointsType),
                 RevFeatureType.build(pointsType));
         patch.addModifiedFeature(feaureDiff);
@@ -81,7 +80,7 @@ public class PatchSerializationTest extends RepositoryTestCase {
     @Test
     public void testAddFeaturePatch() throws Exception {
         Patch patch = new Patch();
-        String path = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
+        String path = NodeRef.appendChild(pointsName, points1.getId());
         patch.addAddedFeature(path, points1, RevFeatureType.build(pointsType));
         testPatch(patch);
     }
@@ -89,7 +88,7 @@ public class PatchSerializationTest extends RepositoryTestCase {
     @Test
     public void testRemoveFeaturePatch() throws Exception {
         Patch patch = new Patch();
-        String path = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
+        String path = NodeRef.appendChild(pointsName, points1.getId());
         patch.addRemovedFeature(path, points1, RevFeatureType.build(pointsType));
         testPatch(patch);
     }

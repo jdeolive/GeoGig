@@ -9,11 +9,10 @@ import java.io.ByteArrayOutputStream;
 
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevObject.TYPE;
-import org.geotools.data.DataUtilities;
+import org.jeo.feature.Schema;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 public abstract class RevFeatureTypeSerializationTest extends Assert {
     private ObjectSerializingFactory factory = getObjectSerializingFactory();
@@ -23,12 +22,12 @@ public abstract class RevFeatureTypeSerializationTest extends Assert {
                 + "doub:Double," + "bdec:java.math.BigDecimal," + "flt:Float," + "int:Integer,"
                 + "bint:java.math.BigInteger," + "pp:Point:srid=4326," + "lng:java.lang.Long,"
                 + "uuid:java.util.UUID";
-    private SimpleFeatureType featureType;
+    private Schema featureType;
     protected abstract ObjectSerializingFactory getObjectSerializingFactory();
 
     @Before
     public void setUp() throws Exception {
-        featureType = DataUtilities.createType(namespace, typeName, typeSpec);
+        featureType = Schema.build(typeName).uri(namespace).fields(typeSpec).schema();
     }
     
     @Test
@@ -47,17 +46,14 @@ public abstract class RevFeatureTypeSerializationTest extends Assert {
         RevFeatureType rft = reader.read(revFeatureType.getId(), input);
     
         assertNotNull(rft);
-        SimpleFeatureType serializedFeatureType = (SimpleFeatureType) rft.type();
-        assertEquals(serializedFeatureType.getDescriptors().size(), featureType.getDescriptors()
-                .size());
+        Schema serializedFeatureType = rft.type();
+        assertEquals(serializedFeatureType.getFields().size(), featureType.getFields().size());
     
-        for (int i = 0; i < featureType.getDescriptors().size(); i++) {
-            assertEquals(featureType.getDescriptor(i), serializedFeatureType.getDescriptor(i));
+        for (int i = 0; i < featureType.getFields().size(); i++) {
+            assertEquals(featureType.getFields().get(i), serializedFeatureType.getFields().get(i));
         }
     
-        assertEquals(featureType.getGeometryDescriptor(),
-                serializedFeatureType.getGeometryDescriptor());
-        assertEquals(featureType.getCoordinateReferenceSystem(),
-                serializedFeatureType.getCoordinateReferenceSystem());
+        assertEquals(featureType.geometry(), serializedFeatureType.geometry());
+        assertEquals(featureType.crs(), serializedFeatureType.crs());
     }
 }

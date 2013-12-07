@@ -38,23 +38,11 @@ import org.geogit.storage.FieldType;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.ObjectWriter;
-import org.geotools.feature.NameImpl;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.CRS.AxisOrder;
-import org.geotools.referencing.wkt.Formattable;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.AttributeType;
-import org.opengis.feature.type.FeatureTypeFactory;
-import org.opengis.feature.type.GeometryType;
-import org.opengis.feature.type.PropertyDescriptor;
-import org.opengis.feature.type.PropertyType;
-import org.opengis.filter.Filter;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.util.InternationalString;
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
+import org.jeo.feature.SchemaBuilder;
+import org.jeo.proj.Proj;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -382,28 +370,26 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
         @Override
         protected void print(RevFeatureType featureType, Writer w) throws IOException {
             println(w, "name\t", featureType.getName().toString());
-            Collection<PropertyDescriptor> attribs = featureType.type().getDescriptors();
-            for (PropertyDescriptor attrib : attribs) {
+            Collection<Field> attribs = featureType.type().getFields();
+            for (Field attrib : attribs) {
                 printAttributeDescriptor(w, attrib);
             }
             w.flush();
         }
 
-        private void printAttributeDescriptor(Writer w, PropertyDescriptor attrib)
-                throws IOException {
+        private void printAttributeDescriptor(Writer w, Field attrib) throws IOException {
             print(w, attrib.getName().toString());
             print(w, "\t");
-            print(w, FieldType.forBinding(attrib.getType().getBinding()).name());
+            print(w, FieldType.forBinding(attrib.getType()).name());
             print(w, "\t");
-            print(w, Integer.toString(attrib.getMinOccurs()));
+            print(w, "1");
             print(w, "\t");
-            print(w, Integer.toString(attrib.getMaxOccurs()));
+            print(w, "1");
             print(w, "\t");
-            print(w, Boolean.toString(attrib.isNillable()));
-            PropertyType attrType = attrib.getType();
-            if (attrType instanceof GeometryType) {
-                GeometryType gt = (GeometryType) attrType;
-                CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
+            print(w, "true");
+            
+            if (attrib.isGeometry()) {
+                CoordinateReferenceSystem crs = attrib.getCRS();
                 String srsName;
                 if (crs == null) {
                     srsName = "urn:ogc:def:crs:EPSG::0";
@@ -411,20 +397,18 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                     // use a flag to control whether the code is returned in EPSG: form instead of
                     // urn:ogc:.. form irrespective of the org.geotools.referencing.forceXY System
                     // property.
-                    final boolean longitudeFirst = CRS.getAxisOrder(crs, false) == AxisOrder.EAST_NORTH;
+                    final boolean longitudeFirst = true;
                     boolean codeOnly = true;
-                    String crsCode = CRS.toSRS(crs, codeOnly);
+                    Integer crsCode = Proj.epsgCode(crs);
                     if (crsCode != null) {
                         srsName = (longitudeFirst ? "EPSG:" : "urn:ogc:def:crs:EPSG::") + crsCode;
                         // check that what we are writing is actually a valid EPSG code and we will
                         // be able to decode it later. If not, we will use WKT instead
                         try {
-                            CRS.decode(srsName, longitudeFirst);
-                        } catch (NoSuchAuthorityCodeException e) {
+                            Proj.crs(srsName);
+                        } catch (Exception e) {
                             srsName = null;
-                        } catch (FactoryException e) {
-                            srsName = null;
-                        }
+                        } 
                     } else {
                         srsName = null;
                     }
@@ -433,13 +417,7 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 if (srsName != null) {
                     print(w, srsName, "\n");
                 } else {
-                    String wkt;
-                    if (crs instanceof Formattable) {
-                        wkt = ((Formattable) crs).toWKT(Formattable.SINGLE_LINE);
-                    } else {
-                        wkt = crs.toWKT();
-                    }
-                    println(w, wkt);
+                    println(w, crs.getParameterString());
                 }
             } else {
                 println(w, "");
@@ -749,42 +727,37 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
      */
     private static final TextReader<RevFeatureType> FEATURETYPE_READER = new TextReader<RevFeatureType>() {
 
-        private SimpleFeatureTypeBuilder builder;
-
-        private FeatureTypeFactory typeFactory;
-
         @Override
         protected RevFeatureType read(ObjectId id, BufferedReader reader, TYPE type)
                 throws IOException {
             Preconditions.checkArgument(TYPE.FEATURETYPE.equals(type), "Wrong type: %s",
                     type.name());
-            builder = new SimpleFeatureTypeBuilder();
-            typeFactory = builder.getFeatureTypeFactory();
+            
             String name = parseLine(requireLine(reader), "name");
-            SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+            SchemaBuilder builder;
             if (name.contains(":")) {
                 int idx = name.lastIndexOf(':');
                 String namespace = name.substring(0, idx);
                 String local = name.substring(idx + 1);
-                builder.setName(new NameImpl(namespace, local));
+                builder = new SchemaBuilder(local).uri(namespace);
             } else {
-                builder.setName(new NameImpl(name));
+                builder = new SchemaBuilder(name);
             }
 
             String line;
             while ((line = reader.readLine()) != null) {
-                builder.add(parseAttributeDescriptor(line));
+                builder.field(parseAttributeDescriptor(line));
             }
-            SimpleFeatureType sft = builder.buildFeatureType();
+            Schema sft = builder.schema();
             return RevFeatureType.build(sft);
 
         }
 
-        private AttributeDescriptor parseAttributeDescriptor(String line) {
+        private Field parseAttributeDescriptor(String line) {
             ArrayList<String> tokens = Lists.newArrayList(Splitter.on('\t').split(line));
             Preconditions.checkArgument(tokens.size() == 5 || tokens.size() == 6,
                     "Wrong attribute definition: %s", line);
-            NameImpl name = new NameImpl(tokens.get(0));
+            String name = tokens.get(0);
             Class<?> type;
             try {
                 type = FieldType.valueOf(tokens.get(1)).getBinding();
@@ -795,18 +768,7 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             int max = Integer.parseInt(tokens.get(3));
             boolean nillable = Boolean.parseBoolean(tokens.get(4));
 
-            /*
-             * Default values that are currently not encoded.
-             */
-            boolean isIdentifiable = false;
-            boolean isAbstract = false;
-            List<Filter> restrictions = null;
-            AttributeType superType = null;
-            InternationalString description = null;
-            Object defaultValue = null;
-
-            AttributeType attributeType;
-            AttributeDescriptor attributeDescriptor;
+            Field attributeDescriptor;
             if (Geometry.class.isAssignableFrom(type)) {
                 String crsText = tokens.get(5);
                 CoordinateReferenceSystem crs;
@@ -817,25 +779,18 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                         if ("urn:ogc:def:crs:EPSG::0".equals(crsText)) {
                             crs = null;
                         } else {
-                            boolean forceLongitudeFirst = crsText.startsWith("EPSG:");
-                            crs = CRS.decode(crsText, forceLongitudeFirst);
+                            crs = Proj.crs(crsText);
                         }
                     } else {
-                        crs = CRS.parseWKT(crsText);
+                        crs = Proj.crs(crsText);
                     }
-                } catch (FactoryException e) {
+                } catch (Exception e) {
                     throw new IllegalArgumentException("Cannot parse CRS definition: " + crsText);
                 }
 
-                attributeType = typeFactory.createGeometryType(name, type, crs, isIdentifiable,
-                        isAbstract, restrictions, superType, description);
-                attributeDescriptor = typeFactory.createGeometryDescriptor(
-                        (GeometryType) attributeType, name, min, max, nillable, defaultValue);
+                attributeDescriptor = new Field(name, type, crs);
             } else {
-                attributeType = typeFactory.createAttributeType(name, type, isIdentifiable,
-                        isAbstract, restrictions, superType, description);
-                attributeDescriptor = typeFactory.createAttributeDescriptor(attributeType, name,
-                        min, max, nillable, defaultValue);
+                attributeDescriptor = new Field(name, type);
             }
             return attributeDescriptor;
         }

@@ -7,8 +7,7 @@ package org.geogit.repository;
 import org.geogit.api.Bucket;
 import org.geogit.api.Node;
 import org.geogit.api.RevTree;
-import org.geotools.geometry.jts.JTS;
-import org.opengis.geometry.BoundingBox;
+import org.jeo.geom.Envelopes;
 
 import com.google.common.collect.ImmutableList;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -50,17 +49,17 @@ public class SpatialOps {
      * @param bounds the bounding box to build from
      * @return the newly constructed geometry
      */
-    public static Geometry toGeometry(final BoundingBox bounds) {
+    public static Geometry toGeometry(final Envelope bounds) {
         if (bounds == null) {
             return null;
         }
         Geometry geom;
-        if (bounds.getSpan(0) == 0D && bounds.getSpan(1) == 0D) {
+        if (bounds.getWidth() == 0D && bounds.getHeight() == 0D) {
             geom = gfac.createPoint(new Coordinate(bounds.getMinX(), bounds.getMinY()));
         } else {
-            geom = JTS.toGeometry(bounds, gfac);
+            geom = Envelopes.toPolygon(bounds);
         }
-        geom.setUserData(bounds.getCoordinateReferenceSystem());
+        //geom.setUserData(bounds.getCoordinateReferenceSystem());
         return geom;
     }
 

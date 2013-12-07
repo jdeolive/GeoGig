@@ -13,8 +13,8 @@ import org.geogit.api.porcelain.BlameOp;
 import org.geogit.api.porcelain.BlameReport;
 import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.ValueAndCommit;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
 
 public class BlameOpTest extends RepositoryTestCase {
 
@@ -68,9 +68,9 @@ public class BlameOpTest extends RepositoryTestCase {
         assertEquals(secondCommit, changes.get("sp").commit);
         assertEquals(firstCommit, changes.get("ip").commit);
         assertEquals(firstCommit, changes.get("pp").commit);
-        assertEquals(pointsModified.getProperty("sp").getValue(), changes.get("sp").value.get());
-        assertEquals(points1.getProperty("ip").getValue(), changes.get("ip").value.get());
-        assertEquals(points1.getProperty("pp").getValue(), changes.get("pp").value.get());
+        assertEquals(pointsModified.get("sp"), changes.get("sp").value.get());
+        assertEquals(points1.get("ip"), changes.get("ip").value.get());
+        assertEquals(points1.get("pp"), changes.get("pp").value.get());
     }
 
     @Test

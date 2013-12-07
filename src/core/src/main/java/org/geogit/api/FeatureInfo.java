@@ -4,7 +4,7 @@
  */
 package org.geogit.api;
 
-import org.opengis.feature.Feature;
+import org.jeo.feature.Feature;
 
 /**
  * A class to compactly store information about a feature, including its path and feature type. This

@@ -22,7 +22,7 @@ import org.geogit.api.plumbing.RevParse;
 import org.geogit.api.plumbing.diff.AttributeDiff;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.FeatureDiff;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -81,10 +81,10 @@ public class BlameOp extends AbstractGeoGitOp<BlameReport> {
                     FeatureDiff featureDiff = command(DiffFeature.class)
                             .setNewVersion(Suppliers.ofInstance(diff.getNewObject()))
                             .setOldVersion(Suppliers.ofInstance(diff.getOldObject())).call();
-                    Map<PropertyDescriptor, AttributeDiff> attribDiffs = featureDiff.getDiffs();
-                    Iterator<PropertyDescriptor> iter = attribDiffs.keySet().iterator();
+                    Map<Field, AttributeDiff> attribDiffs = featureDiff.getDiffs();
+                    Iterator<Field> iter = attribDiffs.keySet().iterator();
                     while (iter.hasNext()) {
-                        PropertyDescriptor key = iter.next();
+                        Field key = iter.next();
                         Optional<?> value = attribDiffs.get(key).getNewValue();
                         String attribute = key.getName().toString();
                         report.addDiff(attribute, value, commit);

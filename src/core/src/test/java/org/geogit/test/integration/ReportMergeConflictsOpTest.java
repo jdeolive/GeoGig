@@ -13,10 +13,9 @@ import org.geogit.api.porcelain.BranchCreateOp;
 import org.geogit.api.porcelain.CheckoutOp;
 import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.RemoveOp;
-import org.geotools.data.DataUtilities;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
 import org.junit.Test;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 import com.google.common.collect.Lists;
 
@@ -257,8 +256,8 @@ public class ReportMergeConflictsOpTest extends RepositoryTestCase {
         RevCommit masterCommit = geogit.command(CommitOp.class).call();
         geogit.command(CheckoutOp.class).setSource("TestBranch").call();
         String modifiedPointsTypeSpecB = "sp:String,ip:Integer,pp:Point:srid=4326,extraB:String";
-        SimpleFeatureType modifiedPointsTypeB = DataUtilities.createType(pointsNs, pointsName,
-                modifiedPointsTypeSpecB);
+        Schema modifiedPointsTypeB = 
+            Schema.build(pointsName).uri(pointsNs).fields(modifiedPointsTypeSpecB).schema();
         geogit.getRepository().getWorkingTree().updateTypeTree(pointsName, modifiedPointsTypeB);
         insert(points1B);
         geogit.command(AddOp.class).call();

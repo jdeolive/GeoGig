@@ -7,9 +7,9 @@ package org.geogit.api;
 import java.util.ArrayList;
 
 import org.geogit.api.plumbing.HashObject;
-import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -19,11 +19,11 @@ import com.google.common.collect.Lists;
  */
 public class RevFeatureType extends AbstractRevObject {
 
-    private final FeatureType featureType;
+    private final Schema featureType;
 
-    private ImmutableList<PropertyDescriptor> sortedDescriptors;
+    private ImmutableList<Field> sortedDescriptors;
 
-    public static RevFeatureType build(FeatureType type) {
+    public static RevFeatureType build(Schema type) {
         RevFeatureType unnamed = new RevFeatureType(type);
         ObjectId id = new HashObject().setObject(unnamed).call();
         return new RevFeatureType(id, type);
@@ -34,7 +34,7 @@ public class RevFeatureType extends AbstractRevObject {
      * 
      * @param featureType the feature type to use
      */
-    private RevFeatureType(FeatureType featureType) {
+    private RevFeatureType(Schema featureType) {
         this(ObjectId.NULL, featureType);
     }
 
@@ -45,11 +45,10 @@ public class RevFeatureType extends AbstractRevObject {
      * @param id the object id to use for this feature type
      * @param featureType the feature type to use
      */
-    public RevFeatureType(ObjectId id, FeatureType featureType) {
+    public RevFeatureType(ObjectId id, Schema featureType) {
         super(id);
         this.featureType = featureType;
-        ArrayList<PropertyDescriptor> descriptors = Lists.newArrayList(this.featureType
-                .getDescriptors());
+        ArrayList<Field> descriptors = Lists.newArrayList(this.featureType.getFields());
         sortedDescriptors = ImmutableList.copyOf(descriptors);
 
     }
@@ -59,14 +58,14 @@ public class RevFeatureType extends AbstractRevObject {
         return TYPE.FEATURETYPE;
     }
 
-    public FeatureType type() {
+    public Schema type() {
         return featureType;
     }
 
     /**
      * @return the sorted {@link PropertyDescriptor}s of the feature type
      */
-    public ImmutableList<PropertyDescriptor> sortedDescriptors() {
+    public ImmutableList<Field> sortedDescriptors() {
         return sortedDescriptors;
     }
 
@@ -74,8 +73,8 @@ public class RevFeatureType extends AbstractRevObject {
      * @return the name of the feature type
      */
     public Name getName() {
-        Name name = type().getName();
-        return name;
+        Schema type = type();
+        return new Name(type.getURI(), type.getName());
     }
 
     @Override
@@ -85,15 +84,15 @@ public class RevFeatureType extends AbstractRevObject {
         builder.append(getId().toString());
         builder.append("; ");
         boolean first = true;
-        for (PropertyDescriptor desc : sortedDescriptors()) {
+        for (Field desc : sortedDescriptors()) {
             if (first) {
                 first = false;
             } else {
                 builder.append(", ");
             }
-            builder.append(desc.getName().getLocalPart());
+            builder.append(desc.getName());
             builder.append(": ");
-            builder.append(desc.getType().getBinding().getSimpleName());
+            builder.append(desc.getType().getSimpleName());
         }
         builder.append(']');
         return builder.toString();

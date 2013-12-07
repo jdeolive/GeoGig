@@ -29,7 +29,7 @@ import org.geogit.api.plumbing.RevParse;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.DiffEntry.ChangeType;
 import org.geogit.api.plumbing.diff.FeatureDiff;
-import org.opengis.feature.Feature;
+import org.jeo.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;

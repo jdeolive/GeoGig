@@ -24,10 +24,10 @@ import org.geogit.api.porcelain.LogOp;
 import org.geogit.api.porcelain.MergeOp;
 import org.geogit.api.porcelain.MergeOp.MergeReport;
 import org.geotools.util.Range;
+import org.jeo.feature.Feature;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterators;
@@ -118,15 +118,15 @@ public class LogOpTest extends RepositoryTestCase {
 
         for (Feature f : features) {
             insertAndAdd(f);
-            String id = f.getIdentifier().getID();
+            String id = f.getId();
             final RevCommit commit = geogit.command(CommitOp.class).call();
-            if (id.equals(lines1.getIdentifier().getID())) {
+            if (id.equals(lines1.getId())) {
                 expectedCommit = commit;
             }
             allCommits.add(commit);
         }
 
-        String path = NodeRef.appendChild(linesName, lines1.getIdentifier().getID());
+        String path = NodeRef.appendChild(linesName, lines1.getId());
 
         List<RevCommit> feature2_1Commits = toList(logOp.addPath(path).call());
         assertEquals(1, feature2_1Commits.size());
@@ -141,18 +141,18 @@ public class LogOpTest extends RepositoryTestCase {
         RevCommit expectedPointCommit = null;
         for (Feature f : features) {
             insertAndAdd(f);
-            String id = f.getIdentifier().getID();
+            String id = f.getId();
             final RevCommit commit = geogit.command(CommitOp.class).call();
-            if (id.equals(lines1.getIdentifier().getID())) {
+            if (id.equals(lines1.getId())) {
                 expectedLineCommit = commit;
-            } else if (id.equals(points1.getIdentifier().getID())) {
+            } else if (id.equals(points1.getId())) {
                 expectedPointCommit = commit;
             }
             allCommits.add(commit);
         }
 
-        String linesPath = NodeRef.appendChild(linesName, lines1.getIdentifier().getID());
-        String pointsPath = NodeRef.appendChild(pointsName, points1.getIdentifier().getID());
+        String linesPath = NodeRef.appendChild(linesName, lines1.getId());
+        String pointsPath = NodeRef.appendChild(pointsName, points1.getId());
 
         List<RevCommit> feature2_1Commits = toList(logOp.addPath(linesPath).call());
         List<RevCommit> featureCommits = toList(logOp.addPath(pointsPath).call());
@@ -178,9 +178,9 @@ public class LogOpTest extends RepositoryTestCase {
         for (Feature f : features) {
             insertAndAdd(f);
             final RevCommit commit = geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId().toString()).call();
             commits.addFirst(commit);
-            if (pointsName.equals(f.getType().getName().getLocalPart())) {
+            if (pointsName.equals(f.schema().getName())) {
                 typeName1Commits.addFirst(commit);
             }
         }

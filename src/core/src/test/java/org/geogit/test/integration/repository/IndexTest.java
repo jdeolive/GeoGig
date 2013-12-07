@@ -28,9 +28,8 @@ import org.geogit.repository.StagingArea;
 import org.geogit.repository.WorkingTree;
 import org.geogit.storage.ObjectInserter;
 import org.geogit.test.integration.RepositoryTestCase;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -52,8 +51,7 @@ public class IndexTest extends RepositoryTestCase {
     @Test
     public void testInsertIdenticalObjects() throws Exception {
         ObjectId oId1 = insertAndAdd(points1);
-        Feature equalContentFeature = feature(pointsType, "DifferentId", ((SimpleFeature) points1)
-                .getAttributes().toArray());
+        Feature equalContentFeature = feature(pointsType, "DifferentId", points1.list().toArray());
 
         ObjectId oId2 = insertAndAdd(equalContentFeature);
 
@@ -94,11 +92,11 @@ public class IndexTest extends RepositoryTestCase {
         RevTree tree = repo.getTree(newRootTreeId);
         // assertEquals(2, tree.size().intValue());
 
-        String path = appendChild(pointsName, points1.getIdentifier().getID());
+        String path = appendChild(pointsName, points1.getId());
         assertTrue(repo.command(FindTreeChild.class).setParent(tree).setChildPath(path).call()
                 .isPresent());
 
-        path = appendChild(linesName, lines1.getIdentifier().getID());
+        path = appendChild(linesName, lines1.getId());
         assertTrue(repo.command(FindTreeChild.class).setParent(tree).setChildPath(path).call()
                 .isPresent());
 
@@ -116,7 +114,7 @@ public class IndexTest extends RepositoryTestCase {
         assertTrue(newHead.isPresent());
 
         WorkingTree workTree = repo.getWorkingTree();
-        workTree.delete(linesName, lines1.getIdentifier().getID());
+        workTree.delete(linesName, lines1.getId());
         geogit.command(AddOp.class).call();
 
         newRootTreeId = geogit.command(WriteTree.class).setOldRoot(tree(newRootTreeId)).call(); // newRootTreeId
@@ -130,11 +128,11 @@ public class IndexTest extends RepositoryTestCase {
 
         tree = repo.getTree(newRootTreeId);
 
-        path = appendChild(pointsName, points1.getIdentifier().getID());
+        path = appendChild(pointsName, points1.getId());
         assertTrue(repo.command(FindTreeChild.class).setParent(tree).setChildPath(path).call()
                 .isPresent());
 
-        path = appendChild(linesName, lines1.getIdentifier().getID());
+        path = appendChild(linesName, lines1.getId());
         assertFalse(repo.command(FindTreeChild.class).setParent(tree).setChildPath(path).call()
                 .isPresent());
 
