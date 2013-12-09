@@ -73,12 +73,22 @@ class WorkingTreeInsertHelper {
         return node;
     }
 
+    public void remove(FeatureToDelete feature) {
+        final RevTreeBuilder2 treeBuilder = getTreeBuilder(feature);
+
+        String fid = feature.getIdentifier().getID();
+        treeBuilder.removeFeature(fid);
+    }
+
     private RevTreeBuilder2 getTreeBuilder(final Feature feature) {
 
         final String treePath = treePathResolver.apply(feature);
         RevTreeBuilder2 builder = treeBuilders.get(treePath);
         if (builder == null) {
-            final FeatureType type = feature.getType();
+            FeatureType type = null;
+            if (!(feature instanceof FeatureToDelete)) {
+                type = feature.getType();
+            }
             builder = createBuilder(treePath, type);
             treeBuilders.put(treePath, builder);
         }
@@ -90,12 +100,14 @@ class WorkingTreeInsertHelper {
         RevTree tree = commandLocator.command(FindOrCreateSubtree.class).setChildPath(treePath)
                 .setIndex(true).setParent(workHead).setParentPath(NodeRef.ROOT).call();
 
-        RevFeatureType revFeatureType = RevFeatureType.build(type);
-        if (tree.isEmpty()) {
-            indexDatabase.put(revFeatureType);
+        ObjectId metadataId = ObjectId.NULL;
+        if (type != null) {
+            RevFeatureType revFeatureType = RevFeatureType.build(type);
+            if (tree.isEmpty()) {
+                indexDatabase.put(revFeatureType);
+            }
+            metadataId = revFeatureType.getId();
         }
-
-        ObjectId metadataId = revFeatureType.getId();
         Envelope bounds = SpatialOps.boundsOf(tree);
         Node node = Node.create(NodeRef.nodeFromPath(treePath), tree.getId(), metadataId,
                 TYPE.TREE, bounds);

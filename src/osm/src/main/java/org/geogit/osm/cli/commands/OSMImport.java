@@ -15,8 +15,8 @@ import org.geogit.cli.CommandFailedException;
 import org.geogit.cli.GeogitCLI;
 import org.geogit.osm.internal.EmptyOSMDownloadException;
 import org.geogit.osm.internal.Mapping;
-import org.geogit.osm.internal.OSMDownloadReport;
 import org.geogit.osm.internal.OSMImportOp;
+import org.geogit.osm.internal.OSMReport;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -60,12 +60,12 @@ public class OSMImport extends AbstractCommand implements CLICommand {
 
         try {
             message = message == null ? "Updated OSM data" : message;
-            Optional<OSMDownloadReport> report = cli.getGeogit().command(OSMImportOp.class)
+            Optional<OSMReport> report = cli.getGeogit().command(OSMImportOp.class)
                     .setDataSource(importFile.getAbsolutePath()).setMapping(mapping)
                     .setMessage(message).setNoRaw(noRaw).setAdd(add)
                     .setProgressListener(cli.getProgressListener()).call();
             if (report.isPresent()) {
-                OSMDownloadReport rep = report.get();
+                OSMReport rep = report.get();
                 String msg;
                 if (rep.getUnpprocessedCount() > 0) {
                     msg = String

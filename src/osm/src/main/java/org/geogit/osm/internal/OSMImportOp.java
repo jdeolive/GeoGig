@@ -64,7 +64,7 @@ import crosby.binary.osmosis.OsmosisReader;
  * 
  */
 
-public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
+public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMReport>> {
 
     /**
      * The filter to use if calling the overpass API
@@ -181,7 +181,7 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
 
     @SuppressWarnings("deprecation")
     @Override
-    public Optional<OSMDownloadReport> call() {
+    public Optional<OSMReport> call() {
 
         checkNotNull(urlOrFilepath);
 
@@ -208,7 +208,7 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
 
         EntityConverter converter = new EntityConverter();
 
-        OSMDownloadReport report;
+        OSMReport report;
         try {
             report = parseDataFileAndInsert(osmDataFile, osmDataStream, converter);
         } finally {
@@ -275,7 +275,7 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
         }
     }
 
-    private OSMDownloadReport parseDataFileAndInsert(@Nullable File file, final InputStream dataIn,
+    private OSMReport parseDataFileAndInsert(@Nullable File file, final InputStream dataIn,
             final EntityConverter converter) {
 
         final boolean pbf;
@@ -343,9 +343,8 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
             throw new EmptyOSMDownloadException();
         }
 
-        OSMDownloadReport report = new OSMDownloadReport(sink.getCount(), sink.getNodeCount(),
-                sink.getWayCount(), sink.getUnprocessedCount(), sink.getLatestChangeset(),
-                sink.getLatestTimestamp());
+        OSMReport report = new OSMReport(sink.getCount(), sink.getNodeCount(), sink.getWayCount(),
+                sink.getUnprocessedCount(), sink.getLatestChangeset(), sink.getLatestTimestamp());
         return report;
     }
 

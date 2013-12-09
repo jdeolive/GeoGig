@@ -45,6 +45,8 @@ class RevTreeBuilder2 {
 
     private final Map<Name, RevFeatureType> revFeatureTypes = Maps.newConcurrentMap();
 
+    private List<String> toDelete = Lists.newArrayList();
+
     private final ObjectId defaultMetadataId;
 
     /**
@@ -102,6 +104,9 @@ class RevTreeBuilder2 {
                 Node node = nodes.next();
                 builder.put(node);
             }
+            for (String name : toDelete) {
+                builder.remove(name);
+            }
         } finally {
             nodeIndex.close();
         }
@@ -148,5 +153,9 @@ class RevTreeBuilder2 {
         Node node = Node.create(name, id, metadataId, TYPE.FEATURE, bbox);
         put(node);
         return node;
+    }
+
+    public void removeFeature(String fid) {
+        toDelete.add(fid);
     }
 }

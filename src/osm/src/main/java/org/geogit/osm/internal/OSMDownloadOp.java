@@ -19,7 +19,7 @@ import com.google.common.io.Files;
  * Downloads data from OSM and commits it to the repository.
  * 
  */
-public class OSMDownloadOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
+public class OSMDownloadOp extends AbstractGeoGitOp<Optional<OSMReport>> {
 
     private File mappingFile;
 
@@ -118,7 +118,7 @@ public class OSMDownloadOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>>
      * @return a {@link OSMDownloadReport} of the operation
      */
     @Override
-    public Optional<OSMDownloadReport> call() {
+    public Optional<OSMReport> call() {
 
         Mapping mapping = null;
         if (mappingFile != null) {
@@ -146,7 +146,7 @@ public class OSMDownloadOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>>
         }
 
         try {
-            Optional<OSMDownloadReport> report = op.setFilter(filter)
+            Optional<OSMReport> report = op.setFilter(filter)
                     .setProgressListener(getProgressListener()).call();
 
             return report;

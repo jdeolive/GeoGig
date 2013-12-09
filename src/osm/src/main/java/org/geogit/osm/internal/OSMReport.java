@@ -6,10 +6,12 @@
 package org.geogit.osm.internal;
 
 /**
- * A class to store the values that define the result of a download operation
+ * A class to store the values that define the result of an OSM operation that alters the current
+ * OSM data in the repository, such as applying a diff file or importing new OSM data from an OSM
+ * file
  * 
  */
-public class OSMDownloadReport {
+public class OSMReport {
 
     private long unpprocessedCount;
 
@@ -23,7 +25,7 @@ public class OSMDownloadReport {
 
     private long wayCount;
 
-    public OSMDownloadReport(long count, long nodeCount, long wayCount, long unprocessedCount,
+    public OSMReport(long count, long nodeCount, long wayCount, long unprocessedCount,
             long latestChangeset, long latestTimestamp) {
         this.count = count;
         this.nodeCount = nodeCount;

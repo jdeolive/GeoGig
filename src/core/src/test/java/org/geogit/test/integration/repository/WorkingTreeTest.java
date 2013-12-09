@@ -24,6 +24,7 @@ import org.geogit.api.TestPlatform;
 import org.geogit.api.data.ForwardingFeatureSource;
 import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.diff.DiffEntry;
+import org.geogit.repository.FeatureToDelete;
 import org.geogit.repository.WorkingTree;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geotools.data.DataUtilities;
@@ -100,6 +101,41 @@ public class WorkingTreeTest extends RepositoryTestCase {
 
         assertEquals(ref1.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP1)).get()
                 .getObjectId());
+        assertEquals(ref2.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP2)).get()
+                .getObjectId());
+        assertEquals(ref3.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP3)).get()
+                .getObjectId());
+    }
+
+    @Test
+    public void testInsertIncludingFeatureToDelete() throws Exception {
+        List<Feature> featureList = new LinkedList<Feature>();
+        featureList.add(points1);
+
+        List<Node> targetList = new LinkedList<Node>();
+        workTree.insert(pointsName, featureList.iterator(), LISTENER, targetList, 1);
+
+        assertEquals(1, targetList.size());
+
+        Node ref1 = targetList.get(0);
+        assertEquals(ref1.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP1)).get()
+                .getObjectId());
+
+        featureList.clear();
+        featureList.add(new FeatureToDelete(pointsName, idP1));
+        featureList.add(points2);
+        featureList.add(points3);
+
+        targetList.clear();
+
+        workTree.insert(pointsName, featureList.iterator(), LISTENER, targetList, 3);
+
+        assertEquals(2, targetList.size());
+
+        Node ref2 = targetList.get(0);
+        Node ref3 = targetList.get(1);
+
+        assertFalse(workTree.findUnstaged(appendChild(pointsName, idP1)).isPresent());
         assertEquals(ref2.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP2)).get()
                 .getObjectId());
         assertEquals(ref3.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP3)).get()

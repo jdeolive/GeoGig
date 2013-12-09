@@ -7,6 +7,7 @@ package org.geogit.osm.cli;
 
 import org.geogit.cli.CLICommandExtension;
 import org.geogit.osm.cli.commands.CreateOSMChangeset;
+import org.geogit.osm.cli.commands.OSMApplyDiff;
 import org.geogit.osm.cli.commands.OSMDownload;
 import org.geogit.osm.cli.commands.OSMExport;
 import org.geogit.osm.cli.commands.OSMExportPG;
@@ -42,6 +43,7 @@ public class OSMCommandProxy implements CLICommandExtension {
         commander.addCommand("export-shp", new OSMExportShp());
         commander.addCommand("export-pg", new OSMExportPG());
         commander.addCommand("export-sl", new OSMExportSL());
+        commander.addCommand("apply-diff", new OSMApplyDiff());
         return commander;
     }
 }

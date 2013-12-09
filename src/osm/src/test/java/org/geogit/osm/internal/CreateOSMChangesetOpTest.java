@@ -52,7 +52,7 @@ public class CreateOSMChangesetOpTest extends RepositoryTestCase {
         Iterator<ChangeContainer> changes = geogit.command(CreateOSMChangesetOp.class)
                 .setNewVersion("HEAD").setOldVersion("HEAD~1").call();
         List<ChangeContainer> list = Lists.newArrayList(changes);
-        assertFalse(list.isEmpty());
+        assertEquals(3, list.size());
     }
 
     @Test
