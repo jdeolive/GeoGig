@@ -12,6 +12,8 @@ import java.sql.Statement;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+import javax.sql.DataSource;
+
 import com.google.common.base.Throwables;
 
 import static org.geogit.storage.sqlite.XerialSQLiteModule.LOG;
@@ -39,6 +41,21 @@ import static org.geogit.storage.sqlite.XerialSQLiteModule.LOG;
 public abstract class DbOp<T> {
 
     Deque<Object> open = new ArrayDeque<Object>();
+
+    /**
+     * Runs the op against a new connection provided by the data source.
+     * <p>
+     * The connection is closed after usage.
+     * </p>
+     * @param ds The data source to obtain connection from.
+     */
+    public final T run(DataSource ds) {
+        try {
+            return run(open(ds.getConnection()));
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
 
     /**
      * Runs the op.

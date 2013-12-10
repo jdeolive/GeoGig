@@ -14,13 +14,19 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.List;
 
+import org.geogit.api.ObjectId;
 import org.geogit.api.Platform;
+import org.geogit.api.RevObject;
+import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ConfigDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteDataSource;
 
+import com.google.common.collect.Iterators;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 
@@ -38,6 +44,8 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
     static final String OBJECTS = "objects";
 
     final SQLiteDataSource dataSource;
+
+    final int partitionSize = 10 * 1000; // TODO make configurable
 
     @Inject
     public XerialObjectDatabase(ConfigDatabase configdb, Platform platform) {
@@ -185,4 +193,95 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
             }
         }.run(cx);
     }
+
+    /**
+     * Override to optimize batch insert.
+     */
+    @Override
+    public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
+        new DbOp<Void>() {
+            @Override
+            protected Void doRun(Connection cx) throws SQLException, IOException {
+                cx.setAutoCommit(false);
+
+                // use INSERT OR IGNORE to deal with duplicates cleanly
+                String sql = format("INSERT OR IGNORE INTO %s (object,id) VALUES (?,?)", OBJECTS);
+                PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
+
+                // partition the objects into chunks for batch processing 
+                Iterator<List<? extends RevObject>> it =
+                    (Iterator) Iterators.partition(objects, partitionSize);
+
+                while (it.hasNext()) {
+                    List<? extends RevObject> objs = it.next();
+                    for (RevObject obj : objs) {
+                        stmt.setBytes(1, ByteStreams.toByteArray(writeObject(obj)));
+                        stmt.setString(2, obj.getId().toString());
+                        stmt.addBatch();
+                    }
+
+                    notifyInserted(stmt.executeBatch(), objs, listener); 
+                    stmt.clearParameters();
+                }
+                cx.commit();
+
+                return null;
+            }
+        }.run(dataSource);
+    }
+
+    void notifyInserted(int[] inserted, List<? extends RevObject> objects, BulkOpListener listener) {
+        for (int i = 0; i < inserted.length; i++) {
+            if (inserted[i] > 0) {
+                listener.inserted(objects.get(i).getId(), null);
+            }
+        }
+    }
+
+    /**
+     * Override to optimize batch delete.
+     */
+    @Override
+    public long deleteAll(final Iterator<ObjectId> ids, final BulkOpListener listener) {
+        return new DbOp<Long>() {
+            @Override
+            protected Long doRun(Connection cx) throws SQLException, IOException {
+                cx.setAutoCommit(false);
+
+                String sql = format("DELETE FROM %s WHERE id = ?", OBJECTS);
+                PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
+
+                long count = 0;
+
+                // partition the objects into chunks for batch processing 
+                Iterator<List<ObjectId>> it = Iterators.partition(ids, partitionSize);
+
+                while (it.hasNext()) {
+                    List<ObjectId> l = it.next();
+                    for (ObjectId id : l) {
+                        stmt.setString(1, id.toString());
+                        stmt.addBatch();
+                    }
+
+                    count += notifyDeleted(stmt.executeBatch(), l, listener); 
+                    stmt.clearParameters();
+                }
+                cx.commit();
+
+                return count;
+            }
+        }.run(dataSource);
+    }
+
+    long notifyDeleted(int[] deleted, List<ObjectId> ids, BulkOpListener listener) {
+        long count = 0; 
+        for (int i = 0; i < deleted.length; i++) {
+            if (deleted[i] > 0) {
+                count++;
+                listener.deleted(ids.get(i));
+            }
+        }
+        return count;
+    }
 }
+

@@ -29,7 +29,11 @@ import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.datastream.DataStreamSerializationFactory;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Predicates;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import static org.geogit.storage.sqlite.SQLiteStorage.*;
@@ -122,11 +126,7 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     @Override
     public RevObject getIfPresent(ObjectId id) {
         InputStream bytes = get(id.toString(), cx);
-        if (bytes == null) {
-            return null;
-        }
-
-        return serializer.createObjectReader().read(id, bytes);
+        return readObject(bytes, id);
     }
 
     @Override
@@ -186,10 +186,8 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     @Override
     public boolean put(RevObject object) {
         String id = object.getId().toString();
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
         try {
-            serializer.createObjectWriter(object.getType()).write(object, bout);
-            put(id, new ByteArrayInputStream(bout.toByteArray()), cx);
+            put(id, writeObject(object), cx);
         } catch (IOException e) {
             throw new RuntimeException("Unable to serialize object: " + object);
         }
@@ -237,6 +235,27 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     @Override
     public ObjectInserter newObjectInserter() {
         return new ObjectInserter(this);
+    }
+
+    /**
+     * Reads object from its binary representation as stored in the database.
+     */
+    protected RevObject readObject(InputStream bytes, ObjectId id) {
+        if (bytes == null) {
+            return null;
+        }
+
+        return serializer.createObjectReader().read(id, bytes);
+    }
+
+    /**
+     * Writes object to its binary representation as stored in the database.
+     */
+    protected InputStream writeObject(RevObject object) throws IOException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+
+        serializer.createObjectWriter(object.getType()).write(object, bout);
+        return new ByteArrayInputStream(bout.toByteArray());
     }
 
     /**
