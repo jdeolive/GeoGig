@@ -137,6 +137,66 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
     }
 
     @Test
+    public void testMappingAndUnmappingOfWaysFromPolygons() throws Exception {
+        // import and check that we have both ways and nodes
+        String filename = OSMImportOp.class.getResource("ways_restriction.xml").getFile();
+        File file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        WorkingTree workTree = geogit.getRepository().getWorkingTree();
+        long unstaged = workTree.countUnstaged("way").getCount();
+        assertTrue(unstaged > 0);
+        unstaged = workTree.countUnstaged("node").getCount();
+        assertTrue(unstaged > 0);
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("msg").call();
+
+        // Define mapping
+        Map<String, AttributeDefinition> fields = Maps.newHashMap();
+        Map<String, List<String>> filter = Maps.newHashMap();
+        filter.put("geom", Lists.newArrayList("closed"));
+        fields.put("geom", new AttributeDefinition("geom", FieldType.POLYGON));
+        fields.put("lit", new AttributeDefinition("lit", FieldType.STRING));
+        Map<String, List<String>> filterExclude = Maps.newHashMap();
+        MappingRule mappingRule = new MappingRule("polygons", filter, filterExclude, fields, null);
+        List<MappingRule> mappingRules = Lists.newArrayList();
+        mappingRules.add(mappingRule);
+        Mapping mapping = new Mapping(mappingRules);
+        geogit.command(OSMMapOp.class).setMapping(mapping).call();
+
+        // Check that mapping was correctly performed
+        Optional<RevFeature> revFeature = geogit.command(RevObjectParse.class)
+                .setRefSpec("HEAD:polygons/31045880").call(RevFeature.class);
+        assertTrue(revFeature.isPresent());
+        ImmutableList<Optional<Object>> values = revFeature.get().getValues();
+        assertEquals(4, values.size());
+        String wkt = "POLYGON ((7.1923367 50.7395887, 7.1923127 50.7396946, 7.1923444 50.7397419, 7.1924199 50.7397781, 7.1923367 50.7395887))";
+        assertEquals(wkt, values.get(2).get().toString());
+        assertEquals("yes", values.get(1).get());
+        revFeature = geogit.command(RevObjectParse.class).setRefSpec("HEAD:polygons/24777894")
+                .call(RevFeature.class);
+        assertFalse(revFeature.isPresent());
+
+        // delete the original feature
+        geogit.getRepository().getWorkingTree().delete("way/31045880");
+        Optional<RevFeature> original = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:way/31045880").call(RevFeature.class);
+        assertFalse(original.isPresent());
+
+        // unmap
+        geogit.command(OSMUnmapOp.class).setPath("polygons").call();
+
+        // check that the original way has been recreated
+        Optional<RevFeature> unmapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:way/31045880").call(RevFeature.class);
+        assertTrue(unmapped.isPresent());
+        values = unmapped.get().getValues();
+        assertEquals(
+                "LINESTRING (7.1923367 50.7395887, 7.1923127 50.7396946, 7.1923444 50.7397419, 7.1924199 50.7397781, 7.1923367 50.7395887)",
+                values.get(7).get().toString());
+
+    }
+
+    @Test
     public void testMappingAndUnmappingOfNodes() throws Exception {
         // Import
         String filename = OSMImportOp.class.getResource("nodes.xml").getFile();

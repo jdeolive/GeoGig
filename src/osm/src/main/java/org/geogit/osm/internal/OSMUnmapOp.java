@@ -439,7 +439,14 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         for (Entry<String, String> entry : entries) {
             tags.add(new Tag(entry.getKey(), entry.getValue()));
         }
-        LineString line = (LineString) feature.getDefaultGeometry();
+
+        Geometry geom = (Geometry) feature.getDefaultGeometry();
+        LineString line;
+        if (geom instanceof LineString) {
+            line = (LineString) geom;
+        } else {
+            line = gf.createLineString(geom.getCoordinates());
+        }
         featureBuilder.set("tags", OSMUtils.buildTagsString(tags));
         featureBuilder.set("way", line);
         featureBuilder.set("changeset", changeset);
