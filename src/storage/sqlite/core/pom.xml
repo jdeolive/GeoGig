@@ -5,20 +5,13 @@
 
   <parent>
     <groupId>org.geogit</groupId>
-    <artifactId>geogit</artifactId>
+    <artifactId>geogit-sqlite</artifactId>
     <version>0.7-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>storage</artifactId>
-  <version>0.7-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>Storage backends</name>
+  <groupId>org.geogit</groupId>
+  <artifactId>geogit-sqlite-core</artifactId>
+  <packaging>jar</packaging>
+  <name>SQLite Storage Core Module</name>
 
-  <modules>
-   <module>bdbje</module>
-   <module>mongo</module>
-   <module>neo4j</module>
-   <module>sqlite</module>
-  </modules>
 </project>
