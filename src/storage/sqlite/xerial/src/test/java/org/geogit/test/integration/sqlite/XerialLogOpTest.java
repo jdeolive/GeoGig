@@ -4,15 +4,21 @@
  */
 package org.geogit.test.integration.sqlite;
 
-import static org.geogit.storage.sqlite.Xerial.injector;
+import static org.geogit.test.integration.sqlite.XerialTests.injector;
 
+import org.geogit.api.TestPlatform;
 import org.geogit.test.integration.LogOpTest;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 import com.google.inject.Injector;
 
 public class XerialLogOpTest extends LogOpTest {
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
+
     @Override
     protected Injector createInjector() {
-        return injector();
+        return injector(new TestPlatform(temp.getRoot()));
     }
 }
