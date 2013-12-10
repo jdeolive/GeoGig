@@ -180,7 +180,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
     }
 
     @Override
-    public boolean remove(final String id, Connection cx) {
+    public boolean delete(final String id, Connection cx) {
         return new DbOp<Boolean>() {
             @Override
             protected Boolean doRun(Connection cx) throws SQLException {

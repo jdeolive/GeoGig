@@ -211,7 +211,7 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
 
     @Override
     public boolean delete(ObjectId objectId) {
-        return remove(objectId.toString(), cx);
+        return delete(objectId.toString(), cx);
     }
 
     @Override
@@ -314,5 +314,5 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
      * 
      * @return Flag indicating if object was actually removed.
      */
-    protected abstract boolean remove(String id, C cx);
+    protected abstract boolean delete(String id, C cx);
 }
