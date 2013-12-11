@@ -30,7 +30,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 
-import static org.geogit.storage.sqlite.Xerial.log;
+import static org.geogit.storage.sqlite.SQLite.log;
 
 /**
  * Object database based on Xerial SQLite jdbc driver.
@@ -40,8 +40,6 @@ import static org.geogit.storage.sqlite.Xerial.log;
 public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialObjectDatabase.class);
-
-    static final String OBJECTS = "objects";
 
     final SQLiteDataSource dataSource;
 

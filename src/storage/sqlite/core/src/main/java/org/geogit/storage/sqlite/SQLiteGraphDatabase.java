@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import static org.geogit.storage.sqlite.SQLiteStorage.*;
+import static org.geogit.storage.sqlite.SQLite.*;
 
 /**
  * Base class for SQLite based graph database.
@@ -28,6 +28,11 @@ import static org.geogit.storage.sqlite.SQLiteStorage.*;
  * @param <C> Connection type.
  */
 public abstract class SQLiteGraphDatabase<T> implements GraphDatabase {
+
+    protected static final String NODES = "nodes";
+    protected static final String EDGES = "edges";
+    protected static final String PROPS = "props";
+    protected static final String MAPPINGS = "mappings";
 
     final ConfigDatabase configdb;
     final Platform platform;

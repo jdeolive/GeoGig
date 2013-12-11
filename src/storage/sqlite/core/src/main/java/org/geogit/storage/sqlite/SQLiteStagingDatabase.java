@@ -18,7 +18,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import static org.geogit.storage.sqlite.SQLiteStorage.*;
+import static org.geogit.storage.sqlite.SQLite.*;
 
 /**
  * Base class for SQLite based staging database.

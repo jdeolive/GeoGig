@@ -22,7 +22,7 @@ import org.sqlite.SQLiteDataSource;
 
 import com.google.inject.Inject;
 
-import static org.geogit.storage.sqlite.Xerial.log;
+import static org.geogit.storage.sqlite.SQLite.log;
 
 /**
  * Graph database based on xerial SQLite jdbc driver.
@@ -33,11 +33,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialGraphDatabase.class);
 
-    static final String NODES = "nodes";
-    static final String EDGES = "edges";
-    static final String PROPS = "props";
-    static final String MAPPINGS = "mappings";
-    
     final SQLiteDataSource dataSource;
 
     @Inject

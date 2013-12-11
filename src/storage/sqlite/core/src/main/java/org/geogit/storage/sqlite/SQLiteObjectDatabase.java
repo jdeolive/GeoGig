@@ -36,7 +36,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
-import static org.geogit.storage.sqlite.SQLiteStorage.*;
+import static org.geogit.storage.sqlite.SQLite.*;
 import static com.google.common.collect.Iterables.*;
 
 /**
@@ -47,6 +47,8 @@ import static com.google.common.collect.Iterables.*;
  * @param <C> Connection type.
  */
 public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
+
+    protected static final String OBJECTS = "objects";
 
     final Platform platform;
     final ConfigDatabase configdb;
