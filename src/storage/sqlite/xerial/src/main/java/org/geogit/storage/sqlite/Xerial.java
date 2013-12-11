@@ -4,7 +4,10 @@
  */
 package org.geogit.storage.sqlite;
 
+import java.io.File;
+
 import org.geogit.di.GeogitModule;
+import org.sqlite.SQLiteDataSource;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -24,5 +27,11 @@ public class Xerial {
     public static Injector injector() {
         return Guice.createInjector(
             Modules.override(new GeogitModule()).with(new XerialSQLiteModule()));
+    }
+
+    public static SQLiteDataSource newDataSource(File db) {
+        SQLiteDataSource dataSource = new SQLiteDataSource();
+        dataSource.setUrl("jdbc:sqlite:" + db.getAbsolutePath());
+        return dataSource;
     }
 }

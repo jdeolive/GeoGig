@@ -42,8 +42,7 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
         //LOG.info(platform.pwd().getAbsolutePath());
 
         File db = new File(new File(platform.pwd(), ".geogit"), "graph.db");
-        dataSource = new SQLiteDataSource();
-        dataSource.setUrl("jdbc:sqlite:" + db.getAbsolutePath());
+        dataSource = Xerial.newDataSource(db);
     }
 
     @Override

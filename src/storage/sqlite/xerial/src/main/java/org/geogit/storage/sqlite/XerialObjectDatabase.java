@@ -54,8 +54,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
         super(configdb, platform);
 
         File db = new File(new File(platform.pwd(), ".geogit"), name + ".db");
-        dataSource = new SQLiteDataSource();
-        dataSource.setUrl("jdbc:sqlite:" + db.getAbsolutePath());
+        dataSource = Xerial.newDataSource(db);
     }
 
     @Override

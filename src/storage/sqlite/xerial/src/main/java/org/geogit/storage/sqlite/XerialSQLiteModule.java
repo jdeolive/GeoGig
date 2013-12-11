@@ -4,6 +4,7 @@
  */
 package org.geogit.storage.sqlite;
 
+import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.GraphDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
@@ -24,6 +25,7 @@ public class XerialSQLiteModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(ConfigDatabase.class).to(XerialConfigDatabase.class).in(Scopes.SINGLETON);
         bind(ObjectDatabase.class).to(XerialObjectDatabase.class).in(Scopes.SINGLETON);
         bind(GraphDatabase.class).to(XerialGraphDatabase.class).in(Scopes.SINGLETON);
         bind(StagingDatabase.class).to(XerialStagingDatabase.class).in(Scopes.SINGLETON);
