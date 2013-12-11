@@ -16,6 +16,7 @@ import org.geogit.api.plumbing.ResolveFeatureType;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.porcelain.AddOp;
 import org.geogit.api.porcelain.CommitOp;
+import org.geogit.osm.internal.MappingRule.DefaultField;
 import org.geogit.repository.WorkingTree;
 import org.geogit.storage.FieldType;
 import org.geogit.test.integration.RepositoryTestCase;
@@ -387,6 +388,94 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         geogit.command(OSMUnmapOp.class).setPath("busstops").call();
 
         unstaged = workTree.countUnstaged("node").getCount();
+        assertEquals(1, unstaged);
+
+        // check that the unmapped node has the changes we introduced
+        Optional<RevFeature> unmapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:node/507464799").call(RevFeature.class);
+        assertTrue(unmapped.isPresent());
+        values = unmapped.get().getValues();
+        assertEquals("POINT (0 1)", values.get(6).get().toString());
+        assertEquals(
+                "bus:yes|public_transport:platform|highway:bus_stop|VRS:ortsteil:Hoholz|name:newname|VRS:ref:68566|VRS:gemeinde:BONN",
+                values.get(3).get().toString());
+        // check that unchanged nodes keep their attributes
+        Optional<RevFeature> unchanged = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:node/1633594723").call(RevFeature.class);
+        values = unchanged.get().getValues();
+        assertEquals("14220478", values.get(4).get().toString());
+        assertEquals("1355097351000", values.get(2).get().toString());
+        assertEquals("2", values.get(1).get().toString());
+
+    }
+
+    @Test
+    public void testMappingAndUnmappingOfNodesWithDefaultFieds() throws Exception {
+        // Import
+        String filename = OSMImportOp.class.getResource("nodes.xml").getFile();
+        File file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("msg").call();
+        // Map
+        Map<String, AttributeDefinition> fields = Maps.newHashMap();
+        Map<String, List<String>> mappings = Maps.newHashMap();
+        mappings.put("highway", Lists.newArrayList("bus_stop"));
+        fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
+        fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
+        Map<String, List<String>> filterExclude = Maps.newHashMap();
+        ArrayList<DefaultField> defaultFields = Lists.newArrayList(DefaultField.tags,
+                DefaultField.timestamp);
+        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields,
+                defaultFields);
+        List<MappingRule> mappingRules = Lists.newArrayList();
+        mappingRules.add(mappingRule);
+        Mapping mapping = new Mapping(mappingRules);
+        geogit.command(OSMMapOp.class).setMapping(mapping).call();
+
+        Optional<RevFeature> revFeature = geogit.command(RevObjectParse.class)
+                .setRefSpec("HEAD:busstops/507464799").call(RevFeature.class);
+        assertTrue(revFeature.isPresent());
+        Optional<RevFeatureType> featureType = geogit.command(ResolveFeatureType.class)
+                .setRefSpec("HEAD:busstops/507464799").call();
+        assertTrue(featureType.isPresent());
+        ImmutableList<Optional<Object>> values = revFeature.get().getValues();
+        assertEquals(5, values.size());
+        String wkt = "POINT (7.1959361 50.739397)";
+        assertEquals(wkt, values.get(4).get().toString());
+        assertEquals(507464799l, values.get(0).get());
+
+        // Modify a node
+        GeometryFactory gf = new GeometryFactory();
+        SimpleFeatureBuilder fb = new SimpleFeatureBuilder((SimpleFeatureType) featureType.get()
+                .type());
+        fb.set("geom", gf.createPoint(new Coordinate(0, 1)));
+        fb.set("name_alias", "newname");
+        fb.set("id", 507464799l);
+        fb.set("tags",
+                "VRS:gemeinde:BONN|VRS:ortsteil:Hoholz|VRS:ref:68566|bus:yes|highway:bus_stop|name:Gielgen|public_transport:platform");
+        fb.set("timestamp", 1355097351000l);
+        SimpleFeature newFeature = fb.buildFeature("507464799");
+        geogit.getRepository().getWorkingTree().insert("busstops", newFeature);
+
+        // check that it was correctly inserted in the working tree
+        Optional<RevFeature> mapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:busstops/507464799").call(RevFeature.class);
+        assertTrue(mapped.isPresent());
+        values = mapped.get().getValues();
+        assertEquals("POINT (0 1)", values.get(4).get().toString());
+        assertEquals(507464799l, ((Long) values.get(0).get()).longValue());
+        assertEquals("newname", values.get(3).get().toString());
+        assertEquals("1355097351000", values.get(2).get().toString());
+        assertEquals(
+                "VRS:gemeinde:BONN|VRS:ortsteil:Hoholz|VRS:ref:68566|bus:yes|highway:bus_stop|name:Gielgen|public_transport:platform",
+                values.get(1).get().toString());
+
+        // unmap
+        geogit.command(OSMUnmapOp.class).setPath("busstops").call();
+
+        WorkingTree workTree = geogit.getRepository().getWorkingTree();
+        long unstaged = workTree.countUnstaged("node").getCount();
         assertEquals(1, unstaged);
 
         // check that the unmapped node has the changes we introduced

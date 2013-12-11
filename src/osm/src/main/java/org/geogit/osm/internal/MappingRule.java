@@ -71,12 +71,23 @@ public class MappingRule {
 
         private Class<?> clazz;
 
+        private static ArrayList<Object> names = Lists.newArrayList();
+        static {
+            for (DefaultField v : DefaultField.values()) {
+                names.add(v.name());
+            }
+        }
+
         DefaultField(Class<?> clazz) {
             this.clazz = clazz;
         }
 
         public Class<?> getFieldClass() {
             return clazz;
+        }
+
+        public static boolean isDefaultField(String s) {
+            return names.contains(s);
         }
 
     }

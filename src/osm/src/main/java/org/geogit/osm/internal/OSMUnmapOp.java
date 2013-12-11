@@ -22,6 +22,7 @@ import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.plumbing.diff.DiffEntry;
+import org.geogit.osm.internal.MappingRule.DefaultField;
 import org.geogit.osm.internal.log.OSMMappingLogEntry;
 import org.geogit.osm.internal.log.ReadOSMMapping;
 import org.geogit.osm.internal.log.ReadOSMMappingLogEntry;
@@ -259,11 +260,13 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
                     }
                 }
 
-                if (tagsMap.containsKey(tagName) && !modified) {
-                    String oldValue = tagsMap.get(tagName);
-                    modified = !value.equals(oldValue);
+                if (!DefaultField.isDefaultField(tagName)) {
+                    if (tagsMap.containsKey(tagName) && !modified) {
+                        String oldValue = tagsMap.get(tagName);
+                        modified = !value.equals(oldValue);
+                    }
+                    tagsMap.put(tagName, value.toString());
                 }
-                tagsMap.put(tagName, value.toString());
             }
         }
 
@@ -368,6 +371,7 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
 
     private void unmapWay(SimpleFeature feature, FeatureMapFlusher flusher) {
         boolean modified = false;
+        final String UNKNOWN_USER = "Unknown";
         String id = feature.getID();
         SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(OSMUtils.wayType());
         Optional<RevFeature> rawFeature = command(RevObjectParse.class).setRefSpec(
@@ -376,7 +380,6 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         long timestamp = System.currentTimeMillis();
         int version = 1;
         long changeset = -1;
-        String user = null;
         Collection<Tag> tags = Lists.newArrayList();
         if (rawFeature.isPresent()) {
             ImmutableList<Optional<Object>> values = rawFeature.get().getValues();
@@ -421,11 +424,13 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
                     }
                 }
 
-                if (tagsMap.containsKey(tagName) && !modified) {
-                    String oldValue = tagsMap.get(tagName);
-                    modified = !value.equals(oldValue);
+                if (!DefaultField.isDefaultField(tagName)) {
+                    if (tagsMap.containsKey(tagName) && !modified) {
+                        String oldValue = tagsMap.get(tagName);
+                        modified = !value.equals(oldValue);
+                    }
+                    tagsMap.put(tagName, value.toString());
                 }
-                tagsMap.put(tagName, value.toString());
             }
         }
 
@@ -447,23 +452,24 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         } else {
             line = gf.createLineString(geom.getCoordinates());
         }
+        featureBuilder.set("visible", true);
         featureBuilder.set("tags", OSMUtils.buildTagsString(tags));
         featureBuilder.set("way", line);
         featureBuilder.set("changeset", changeset);
         featureBuilder.set("timestamp", timestamp);
         featureBuilder.set("version", version);
-        featureBuilder.set("user", user);
+        featureBuilder.set("user", UNKNOWN_USER);
         featureBuilder.set("nodes", getNodeStringFromWay(feature, flusher));
         if (rawFeature.isPresent()) {
             // the feature has changed, so we cannot reuse some attributes
             featureBuilder.set("timestamp", System.currentTimeMillis());
-            featureBuilder.set("user", null);
-            featureBuilder.set("changeset", null);
-            featureBuilder.set("version", null);
+            featureBuilder.set("changeset", -changeset); // temporary negative changeset ID
+            // featureBuilder.set("version", version);
             flusher.put("way", featureBuilder.buildFeature(id));
         } else {
             flusher.put("way", featureBuilder.buildFeature(id));
         }
 
     }
+
 }
