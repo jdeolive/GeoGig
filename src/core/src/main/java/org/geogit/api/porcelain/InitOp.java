@@ -104,11 +104,11 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
     public Repository call() {
         final File workingDirectory = platform.pwd();
         checkState(workingDirectory != null, "working directory is null");
-        final URL repoUrl = new ResolveGeogitDir(platform).call();
+        final Optional<URL> repoUrl = new ResolveGeogitDir(platform).call();
 
         boolean repoExisted = false;
         File envHome;
-        if (repoUrl == null) {
+        if (!repoUrl.isPresent()) {
             envHome = new File(workingDirectory, ".geogit");
             envHome.mkdirs();
             if (!envHome.exists()) {
@@ -118,7 +118,7 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
         } else {
             // we're at either the repo working dir or a subdirectory of it
             try {
-                envHome = new File(repoUrl.toURI());
+                envHome = new File(repoUrl.get().toURI());
             } catch (URISyntaxException e) {
                 throw Throwables.propagate(e);
             }
@@ -138,19 +138,18 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
                     throw new FileNotFoundException("No filter file found at " + filterFile + ".");
                 }
 
-                URL envHomeURL = new ResolveGeogitDir(platform).call();
-                if (envHomeURL == null) {
-                    throw new IllegalStateException("Not inside a geogit directory");
-                }
-                if (!"file".equals(envHomeURL.getProtocol())) {
+                Optional<URL> envHomeURL = new ResolveGeogitDir(platform).call();
+                Preconditions.checkState(envHomeURL.isPresent(), "Not inside a geogit directory");
+                final URL url = envHomeURL.get();
+                if (!"file".equals(url.getProtocol())) {
                     throw new UnsupportedOperationException(
                             "Sparse clone works only against file system repositories. "
-                                    + "Repository location: " + envHomeURL.toExternalForm());
+                                    + "Repository location: " + url.toExternalForm());
                 }
 
                 File repoDir;
                 try {
-                    repoDir = new File(envHomeURL.toURI());
+                    repoDir = new File(url.toURI());
                 } catch (URISyntaxException e) {
                     throw Throwables.propagate(e);
                 }
@@ -167,7 +166,7 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
 
         try {
             Preconditions.checkState(envHome.toURI().toURL()
-                    .equals(new ResolveGeogitDir(platform).call()));
+                    .equals(new ResolveGeogitDir(platform).call().get()));
         } catch (MalformedURLException e) {
             Throwables.propagate(e);
         }

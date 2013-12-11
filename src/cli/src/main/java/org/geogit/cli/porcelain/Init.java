@@ -125,7 +125,7 @@ public class Init extends AbstractCommand implements CLICommand {
         geogit.setRepository(repository);
         cli.setGeogit(geogit);
 
-        final URL envHome = geogit.command(ResolveGeogitDir.class).call();
+        final URL envHome = geogit.command(ResolveGeogitDir.class).call().get();
 
         File repoDirectory;
         try {
