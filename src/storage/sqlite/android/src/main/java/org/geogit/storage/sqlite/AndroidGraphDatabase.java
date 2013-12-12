@@ -11,6 +11,8 @@ import org.geogit.storage.ConfigDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -19,6 +21,7 @@ public class AndroidGraphDatabase extends SQLiteGraphDatabase<SQLiteDatabase> {
 
     static Logger LOG = LoggerFactory.getLogger(AndroidGraphDatabase.class);
 
+    @Inject
     public AndroidGraphDatabase(ConfigDatabase configdb, Platform platform) {
         super(configdb, platform);
     }

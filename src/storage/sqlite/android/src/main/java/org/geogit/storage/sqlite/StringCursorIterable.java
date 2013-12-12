@@ -24,7 +24,7 @@ public class StringCursorIterable implements Iterable<String> {
                     return endOfData();
                 }
 
-                return c.getString(1);
+                return c.getString(0);
             }
         };
     }

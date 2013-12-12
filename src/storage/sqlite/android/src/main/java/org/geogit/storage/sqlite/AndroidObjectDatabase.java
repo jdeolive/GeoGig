@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
+import com.google.inject.Inject;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -25,13 +26,21 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
 
     static Logger LOG = LoggerFactory.getLogger(AndroidObjectDatabase.class);
 
+    final String dbname;
+
+    @Inject
     public AndroidObjectDatabase(ConfigDatabase configdb, Platform platform) {
+        this(configdb, platform, OBJECTS);
+    }
+
+    public AndroidObjectDatabase(ConfigDatabase configdb, Platform platform, String dbname) {
         super(configdb, platform);
+        this.dbname = dbname;
     }
 
     @Override
     protected SQLiteDatabase connect() {
-        File file = new File(new File(platform.pwd(), ".geogit"), OBJECTS + ".db");
+        File file = new File(new File(platform.pwd(), ".geogit"), dbname + ".db");
         return SQLiteDatabase.openOrCreateDatabase(file, null);
     }
 
@@ -70,7 +79,7 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
 
     @Override
     protected Iterable<String> search(String partialId, SQLiteDatabase cx) {
-        log(format("SELECT id FROM %s WHERE id = LIKE '%?%'", OBJECTS), LOG, partialId);
+        log(format("SELECT id FROM %s WHERE id = LIKE '%%%s%%'", OBJECTS, partialId), LOG);
 
         Cursor c = 
             cx.query(OBJECTS, array("id"), "id LIKE '%"+partialId+"%'", null, null, null, null);
@@ -100,6 +109,7 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
 
         ContentValues vals = new ContentValues();
         try {
+            vals.put("id", id);
             vals.put("object", ByteStreams.toByteArray(obj));
         } catch (IOException e) {
             throw Throwables.propagate(e);
