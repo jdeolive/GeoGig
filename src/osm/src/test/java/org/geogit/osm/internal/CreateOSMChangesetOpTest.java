@@ -55,4 +55,27 @@ public class CreateOSMChangesetOpTest extends RepositoryTestCase {
         assertFalse(list.isEmpty());
     }
 
+    @Test
+    public void testCreateChangesetsWithIdReplacement() throws Exception {
+        String filename = getClass().getResource("nodes_for_changeset.xml").getFile();
+        File file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        long unstaged = geogit.getRepository().getWorkingTree().countUnstaged("node").getCount();
+        assertTrue(unstaged > 0);
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("commit1").call();
+        filename = getClass().getResource("nodes_for_changeset3.xml").getFile();
+        file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        unstaged = geogit.getRepository().getWorkingTree().countUnstaged("node").getCount();
+        assertTrue(unstaged > 0);
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("commit2").call();
+        Iterator<ChangeContainer> changes = geogit.command(CreateOSMChangesetOp.class)
+                .setNewVersion("HEAD").setOldVersion("HEAD~1").setId(1l).call();
+        List<ChangeContainer> list = Lists.newArrayList(changes);
+        assertEquals(3, list.size());
+        assertEquals(1l, list.get(0).getEntityContainer().getEntity().getChangesetId());
+    }
+
 }

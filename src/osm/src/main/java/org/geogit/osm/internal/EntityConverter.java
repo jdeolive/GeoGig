@@ -67,12 +67,21 @@ public class EntityConverter {
 
     }
 
-    public Entity toEntity(SimpleFeature feature) {
+    /**
+     * Converts a Feature to a OSM Entity
+     * @param feature the feature to convert
+     * @param replaceId. The changesetId to use in case the feature has a negative one indicating a temporary value
+     * @return
+     */
+    public Entity toEntity(SimpleFeature feature, Long changesetId) {
         Entity entity;
         SimpleFeatureType type = feature.getFeatureType();
         long id = Long.parseLong(feature.getID());
         int version = ((Integer) feature.getAttribute("version")).intValue();
         Long changeset = (Long) feature.getAttribute("changeset");
+        if (changesetId != null && changeset < 0){
+        	changeset = changesetId;
+        }
         Long milis = (Long) feature.getAttribute("timestamp");
         Date timestamp = new Date(milis);
         String user = (String) feature.getAttribute("user");

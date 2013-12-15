@@ -205,6 +205,8 @@ To export the differences between the working tree and the current HEAD, this wo
 
 Only the ``node`` and ``way`` trees are compared to find the differences between the specified commits. Changes in other trees will be ignored, and no changeset entries will be created based on them.
 
+The changeset command accepts an addtional parameter ``--id``. In case the OSM trees contain modified or new feature which do not have a changeset id assigned (because they haven't been already uploaded to the OSM planet), they will have a negative changeset id to indicate that. If you pass an Id (which you have to retrieve manually from the OSM planet), GeoGit will use it to replace those negative Ids. This way, you will get a changeset file that is already prepared to be uploaded and contributed to OSM.
+
 Data mapping
 -------------
 
