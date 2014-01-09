@@ -5,6 +5,8 @@
 
 package org.geogit.api.plumbing.diff;
 
+import javax.annotation.Nullable;
+
 import org.geogit.storage.text.TextValueSerializer;
 
 import com.google.common.base.Objects;
@@ -27,17 +29,28 @@ public class GenericAttributeDiffImpl implements AttributeDiff {
      */
     private Optional<?> oldValue;
 
-    public GenericAttributeDiffImpl(Optional<?> oldValue, Optional<?> newValue) {
-        this.oldValue = oldValue;
-        this.newValue = newValue;
+    public GenericAttributeDiffImpl(@Nullable Optional<?> oldValue, @Nullable Optional<?> newValue) {
+        if (oldValue == null) {
+            this.oldValue = Optional.absent();
+        } else {
+            this.oldValue = oldValue;
+        }
+
+        if (newValue == null) {
+            this.newValue = Optional.absent();
+        } else {
+            this.newValue = newValue;
+        }
     }
 
     @Override
     public TYPE getType() {
         TYPE type;
-        if (newValue == null) {
+        if (!oldValue.isPresent() && !newValue.isPresent()) {
+            type = TYPE.NO_CHANGE;
+        } else if (!newValue.isPresent()) {
             type = TYPE.REMOVED;
-        } else if (oldValue == null) {
+        } else if (!oldValue.isPresent()) {
             type = TYPE.ADDED;
         } else if (oldValue.equals(newValue)) {
             type = TYPE.NO_CHANGE;
