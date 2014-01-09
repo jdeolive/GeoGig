@@ -149,6 +149,8 @@ public class CommandBuilder {
         command.setPaths(Arrays.asList(options.getValuesArray("path")));
         command.setSince(options.getFirstValue("since"));
         command.setUntil(options.getFirstValue("until"));
+        command.setSinceTime(options.getFirstValue("sinceTime"));
+        command.setUntilTime(options.getFirstValue("untilTime"));
         command.setPage(parseInt(options, "page", 0));
         command.setElementsPerPage(parseInt(options, "show", 30));
         command.setFirstParentOnly(Boolean.valueOf(options
@@ -254,6 +256,7 @@ public class CommandBuilder {
         RemoteWebOp command = new RemoteWebOp();
         command.setList(Boolean.valueOf(options.getFirstValue("list", "false")));
         command.setRemove(Boolean.valueOf(options.getFirstValue("remove", "false")));
+        command.setPing(Boolean.valueOf(options.getFirstValue("ping", "false")));
         command.setRemoteName(options.getFirstValue("remoteName", null));
         command.setRemoteURL(options.getFirstValue("remoteURL", null));
         return command;

@@ -40,7 +40,8 @@ public abstract class GraphDatabaseStressTest extends RepositoryTestCase {
     @Test
     public void testConcurrentUses() throws Exception {
         ConcurrentLinkedQueue<String> errorLog = new ConcurrentLinkedQueue<String>();
-        ExecutorService executor = Executors.newCachedThreadPool();
+        //ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         List<Future<?>> futures = new ArrayList<Future<?>>();
         for (String s : new String[] { "a", "b", "c", "d" }) {
             Runnable task = new InsertMany(s, errorLog);

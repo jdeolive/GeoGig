@@ -9,55 +9,42 @@
     <version>0.7-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.geogit</groupId>
-  <artifactId>geogit-neo4j</artifactId>
+  <artifactId>geogit-blueprints</artifactId>
   <packaging>jar</packaging>
-  <name>Neo4J graph storage backend</name>
+  <name>Blueprints graph database base classes</name>
 
   <dependencies>
     <dependency>
       <groupId>org.geogit</groupId>
-      <artifactId>geogit-blueprints</artifactId>
+      <artifactId>geogit-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <!-- Google Common Libraries. Featuring com.google.collect collection classes -->
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.sourceforge.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.inject</groupId>
-      <artifactId>guice</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-neo4j-graph</artifactId>
+      <artifactId>blueprints-core</artifactId>
     </dependency>
-
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
+      <groupId>com.tinkerpop.gremlin</groupId>
+      <artifactId>gremlin-java</artifactId>
     </dependency>
-
+    
     <!-- Test scope dependencies -->
     <dependency>
       <groupId>org.geogit</groupId>
       <artifactId>geogit-core</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
       <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -71,6 +58,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-  </build>
 </project>

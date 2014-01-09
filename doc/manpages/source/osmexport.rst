@@ -23,7 +23,7 @@ OPTIONS
 
 [commitish]							A reference that resolves to the commit to export from. If not provided, the current HEAD is used.
     
--b <N S E W>, --bbox <N S E W>		Exports only the features within a given bounding box, defined by its 4 boundary values.
+-b <S W N E>, --bbox <S W N E>		Exports only the features within a given bounding box, defined by its 4 boundary values.
 
 --overwrite, -o 	 				Overwrites the specified outut file if it already exists.
 

@@ -4,18 +4,21 @@
  */
 package org.geogit.web.api.commands;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
 import org.geogit.api.CommandLocator;
 import org.geogit.api.ObjectId;
 import org.geogit.api.RevCommit;
+import org.geogit.api.plumbing.ParseTimestamp;
 import org.geogit.api.plumbing.RevParse;
 import org.geogit.api.porcelain.LogOp;
 import org.geogit.web.api.AbstractWebAPICommand;
 import org.geogit.web.api.CommandContext;
 import org.geogit.web.api.CommandResponse;
 import org.geogit.web.api.ResponseWriter;
+import org.geotools.util.Range;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -34,6 +37,10 @@ public class Log extends AbstractWebAPICommand {
     String since;
 
     String until;
+
+    String sinceTime;
+
+    String untilTime;
 
     List<String> paths;
 
@@ -77,6 +84,24 @@ public class Log extends AbstractWebAPICommand {
      */
     public void setUntil(String until) {
         this.until = until;
+    }
+
+    /**
+     * Mutator for the sinceTime variable
+     * 
+     * @param since - the start place to list commits
+     */
+    public void setSinceTime(String since) {
+        this.sinceTime = since;
+    }
+
+    /**
+     * Mutator for the untilTime variable
+     * 
+     * @param until - the end place for listing commits
+     */
+    public void setUntilTime(String until) {
+        this.untilTime = until;
     }
 
     /**
@@ -133,6 +158,20 @@ public class Log extends AbstractWebAPICommand {
         }
         if (limit != null) {
             op.setLimit(limit.intValue());
+        }
+
+        if (this.sinceTime != null || this.untilTime != null) {
+            Date since = new Date(0);
+            Date until = new Date();
+            if (this.sinceTime != null) {
+                since = new Date(geogit.command(ParseTimestamp.class).setString(this.sinceTime)
+                        .call());
+            }
+            if (this.untilTime != null) {
+                until = new Date(geogit.command(ParseTimestamp.class).setString(this.untilTime)
+                        .call());
+            }
+            op.setTimeRange(new Range<Date>(Date.class, since, until));
         }
 
         if (this.since != null) {
