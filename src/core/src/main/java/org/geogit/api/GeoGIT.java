@@ -169,4 +169,8 @@ public class GeoGIT {
     public DiffObjectCount countStaged() {
         return getRepository().getIndex().countStaged(null);
     }
+
+    public boolean isOpen() {
+        return repository != null;
+    }
 }

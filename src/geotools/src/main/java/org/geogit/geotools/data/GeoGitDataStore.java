@@ -88,6 +88,12 @@ public class GeoGitDataStore extends ContentDataStore implements DataStore {
         this.geogit = geogit;
     }
 
+    @Override
+    public void dispose() {
+        super.dispose();
+        geogit.close();
+    }
+
     /**
      * Instructs the datastore to operate against the specified branch, or against the checked out
      * branch, whatever it is, if the argument is {@code null}.

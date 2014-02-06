@@ -5,6 +5,7 @@
 package org.geogit.storage;
 
 import org.geogit.di.GeogitModule;
+import org.geogit.storage.blueprints.TinkerGraphDatabase;
 import org.junit.Assert;
 
 import com.google.inject.AbstractModule;

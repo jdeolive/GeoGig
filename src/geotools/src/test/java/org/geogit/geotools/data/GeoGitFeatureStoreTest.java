@@ -59,6 +59,7 @@ public class GeoGitFeatureStoreTest extends RepositoryTestCase {
 
     @Override
     protected void tearDownInternal() throws Exception {
+        dataStore.dispose();
         dataStore = null;
         points = null;
     }

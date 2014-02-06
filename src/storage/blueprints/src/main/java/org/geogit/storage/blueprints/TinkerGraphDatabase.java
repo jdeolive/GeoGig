@@ -2,10 +2,12 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.storage;
+package org.geogit.storage.blueprints;
 
 import org.geogit.api.Platform;
 import org.geogit.repository.RepositoryConnectionException;
+import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.SynchronizedGraphDatabase;
 
 import com.google.inject.Inject;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;

@@ -13,14 +13,17 @@ import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.geogit.api.GeoGIT;
 import org.geogit.api.NodeRef;
+import org.geogit.api.RevCommit;
 import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.api.porcelain.CommitOp;
+import org.geogit.api.porcelain.LogOp;
 import org.geogit.di.GeogitModule;
 import org.geogit.di.caching.CachingModule;
 import org.geogit.geotools.data.GeoGitDataStore;
@@ -48,6 +51,7 @@ import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.w3c.dom.Document;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.util.Modules;
@@ -171,6 +175,20 @@ public class WFSIntegrationTest extends WFSTestSupport {
 
     @Test
     public void testInsert() throws Exception {
+        Document dom = insert();
+        assertEquals("wfs:TransactionResponse", dom.getDocumentElement().getNodeName());
+
+        assertEquals("1", getFirstElementByTagName(dom, "wfs:totalInserted").getFirstChild()
+                .getNodeValue());
+
+        dom = getAsDOM("wfs?version=1.1.0&request=getfeature&typename=geogit:Lines&srsName=EPSG:4326&");
+        // print(dom);
+        assertEquals("wfs:FeatureCollection", dom.getDocumentElement().getNodeName());
+
+        assertEquals(2, dom.getElementsByTagName("geogit:Lines").getLength());
+    }
+
+    private Document insert() throws Exception {
         String xml = "<wfs:Transaction service=\"WFS\" version=\"1.1.0\" "//
                 + " xmlns:wfs=\"http://www.opengis.net/wfs\" "//
                 + " xmlns:gml=\"http://www.opengis.net/gml\" " //
@@ -189,20 +207,24 @@ public class WFSIntegrationTest extends WFSTestSupport {
                 + "</wfs:Transaction>";
 
         Document dom = postAsDOM("wfs", xml);
-        assertEquals("wfs:TransactionResponse", dom.getDocumentElement().getNodeName());
-
-        assertEquals("1", getFirstElementByTagName(dom, "wfs:totalInserted").getFirstChild()
-                .getNodeValue());
-
-        dom = getAsDOM("wfs?version=1.1.0&request=getfeature&typename=geogit:Lines&srsName=EPSG:4326&");
-        // print(dom);
-        assertEquals("wfs:FeatureCollection", dom.getDocumentElement().getNodeName());
-
-        assertEquals(2, dom.getElementsByTagName("geogit:Lines").getLength());
+        return dom;
     }
 
     @Test
     public void testUpdate() throws Exception {
+        Document dom = update();
+        assertEquals("wfs:TransactionResponse", dom.getDocumentElement().getNodeName());
+        assertEquals("1", getFirstElementByTagName(dom, "wfs:totalUpdated").getFirstChild()
+                .getNodeValue());
+
+        dom = getAsDOM("wfs?version=1.1.0&request=getfeature&typename=geogit:Lines" + "&"
+                + "cql_filter=ip%3D1000");
+        assertEquals("wfs:FeatureCollection", dom.getDocumentElement().getNodeName());
+
+        assertEquals(1, dom.getElementsByTagName("geogit:Lines").getLength());
+    }
+
+    private Document update() throws Exception {
         String xml = "<wfs:Transaction service=\"WFS\" version=\"1.1.0\""//
                 + " xmlns:geogit=\"" + NAMESPACE
                 + "\""//
@@ -228,15 +250,7 @@ public class WFSIntegrationTest extends WFSTestSupport {
                 + "</wfs:Transaction>";
 
         Document dom = postAsDOM("wfs", xml);
-        assertEquals("wfs:TransactionResponse", dom.getDocumentElement().getNodeName());
-        assertEquals("1", getFirstElementByTagName(dom, "wfs:totalUpdated").getFirstChild()
-                .getNodeValue());
-
-        dom = getAsDOM("wfs?version=1.1.0&request=getfeature&typename=geogit:Lines" + "&"
-                + "cql_filter=ip%3D1000");
-        assertEquals("wfs:FeatureCollection", dom.getDocumentElement().getNodeName());
-
-        assertEquals(1, dom.getElementsByTagName("geogit:Lines").getLength());
+        return dom;
     }
 
     /**
@@ -356,6 +370,30 @@ public class WFSIntegrationTest extends WFSTestSupport {
             NodeRef ref = featureRefs.next();
             assertEquals(finalTypeTreeRef.getMetadataId(), ref.getMetadataId());
             assertFalse(ref.toString(), ref.getNode().getMetadataId().isPresent());
+        }
+    }
+
+    @Test
+    public void testCommitsSurviveShutDown() throws Exception {
+        RepositoryTestCase helper = WFSIntegrationTest.helper;
+        GeoGIT geogit = helper.getGeogit();
+
+        insert();
+        update();
+
+        List<RevCommit> expected = ImmutableList.copyOf(geogit.command(LogOp.class).call());
+
+        File repoDir = helper.repositoryTempFolder.getRoot();
+        // shut down server
+        super.doTearDownClass();
+
+        geogit = new GeoGIT(repoDir);
+        try {
+            assertNotNull(geogit.getRepository());
+            List<RevCommit> actual = ImmutableList.copyOf(geogit.command(LogOp.class).call());
+            assertEquals(expected, actual);
+        } finally {
+            geogit.close();
         }
     }
 }
