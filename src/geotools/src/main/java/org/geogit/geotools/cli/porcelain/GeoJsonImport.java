@@ -49,6 +49,12 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
     String destTable;
 
     /**
+     * Name to use for geometry attribute, replacing the default one ("geometry")
+     */
+    @Parameter(names = { "--geom-name" }, description = "Name to use for geometry attribute, replacing the default one ('geometry')")
+    String geomName;
+
+    /**
      * The attribute to use to create the feature Id
      */
     @Parameter(names = { "--fid-attrib" }, description = "Use the specified attribute to create the feature Id")
@@ -82,7 +88,8 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
                 ProgressListener progressListener = cli.getProgressListener();
                 cli.getGeogit().command(ImportOp.class).setAll(true).setTable(null).setAlter(alter)
                         .setOverwrite(!add).setDestinationPath(destTable).setDataStore(dataStore)
-                        .setFidAttribute(fidAttribute).setProgressListener(progressListener).call();
+                        .setFidAttribute(fidAttribute).setGeomName(geomName)
+                        .setProgressListener(progressListener).call();
 
                 cli.getConsole().println(geoJSON + " imported successfully.");
 

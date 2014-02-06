@@ -6,6 +6,7 @@
 package org.geogit.geotools.plumbing;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -35,10 +36,12 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.feature.type.AttributeDescriptorImpl;
 import org.geotools.filter.identity.FeatureIdImpl;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.filter.identity.FeatureId;
@@ -70,6 +73,11 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
      * The path to import the data into
      */
     private String destPath;
+
+    /**
+     * The name to use for the geometry descriptor, replacing the default one
+     */
+    private String geomName;
 
     /**
      * The name of the attribute to use for defining feature id's
@@ -161,6 +169,9 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
                 path = destPath;
                 featureType = createForceFeatureType(featureType, path);
             }
+
+            featureType = decorateGeomName(featureType);
+
             featureSource = new ForceTypeAndFidFeatureSource<FeatureType, Feature>(featureSource,
                     featureType, fidPrefix);
 
@@ -185,6 +196,7 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
                     throw new GeoToolsOpException(StatusCode.UNABLE_TO_INSERT);
                 }
             }
+
             try {
                 insert(workTree, path, featureSource, taskProgress);
             } catch (Exception e) {
@@ -195,6 +207,39 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
         progressListener.progress(100.f);
         progressListener.complete();
         return workTree.getTree();
+    }
+
+    private SimpleFeatureType decorateGeomName(SimpleFeatureType featureType) {
+
+        if (geomName == null) {
+            return featureType;
+        }
+
+        SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+        List<AttributeDescriptor> newAttributes = Lists.newArrayList();
+
+        String oldGeomName = featureType.getGeometryDescriptor().getName().getLocalPart();
+        Collection<AttributeDescriptor> descriptors = featureType.getAttributeDescriptors();
+
+        for (AttributeDescriptor descriptor : descriptors) {
+            String name = descriptor.getName().getLocalPart();
+            if (name.equals(oldGeomName)) {
+                AttributeDescriptorImpl newDescriptor = new AttributeDescriptorImpl(
+                        descriptor.getType(), new NameImpl(geomName), descriptor.getMinOccurs(),
+                        descriptor.getMaxOccurs(), descriptor.isNillable(),
+                        descriptor.getDefaultValue());
+                newAttributes.add(newDescriptor);
+            } else {
+                newAttributes.add(descriptor);
+            }
+        }
+
+        builder.setAttributes(newAttributes);
+        builder.setName(featureType.getName());
+        builder.setCRS(featureType.getCoordinateReferenceSystem());
+        featureType = builder.buildFeatureType();
+        return featureType;
+
     }
 
     private SimpleFeatureType createForceFeatureType(SimpleFeatureType featureType, String path) {
@@ -514,5 +559,16 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
         public FeatureId getIdentifier() {
             return new FeatureIdImpl(fid);
         }
+    }
+
+    /**
+     * Sets the name to use for the geometry descriptor. If not provided, a default one will be used
+     * 
+     * @param geomName
+     */
+    public ImportOp setGeomName(String geomName) {
+        this.geomName = geomName;
+        return this;
+
     }
 }

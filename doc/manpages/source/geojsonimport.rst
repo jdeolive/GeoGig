@@ -28,6 +28,7 @@ OPTIONS
 
 --alter                         Same as the ``--add`` switch, but if the feature type of the imported features is different to that of the destination tree, the default feature type is changed and all previous features are modified to use that feature type
 
+--geom-name	<name>				Instead of using the default name for the geometry field ('geometry'), it will use the passed name.
 
 BUGS
 ****
