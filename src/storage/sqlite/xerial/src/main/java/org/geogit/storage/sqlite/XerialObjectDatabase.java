@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteDataSource;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
@@ -180,6 +181,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
      */
     @Override
     public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
+        Preconditions.checkState(isOpen(), "No open database connection");
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {
@@ -208,7 +210,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return null;
             }
-        }.run(dataSource);
+        }.run(cx);
     }
 
     void notifyInserted(int[] inserted, List<? extends RevObject> objects, BulkOpListener listener) {
@@ -224,6 +226,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
      */
     @Override
     public long deleteAll(final Iterator<ObjectId> ids, final BulkOpListener listener) {
+        Preconditions.checkState(isOpen(), "No open database connection");
         return new DbOp<Long>() {
             @Override
             protected Long doRun(Connection cx) throws SQLException, IOException {
@@ -251,7 +254,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return count;
             }
-        }.run(dataSource);
+        }.run(cx);
     }
 
     long notifyDeleted(int[] deleted, List<ObjectId> ids, BulkOpListener listener) {
