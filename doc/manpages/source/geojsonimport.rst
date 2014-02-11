@@ -30,6 +30,8 @@ OPTIONS
 
 --geom-name	<name>				Instead of using the default name for the geometry field ('geometry'), it will use the passed name.
 
+--geom-name-auto				Uses the name of the geomettry attribute in the destination tree, if it already exist, to name the geometry field of the data being imported. If the destination tree does not exist, or if the data contained in the tree has no geometry, it uses the default name ('geometry'). It cannot be used with --geom-name
+
 BUGS
 ****
 

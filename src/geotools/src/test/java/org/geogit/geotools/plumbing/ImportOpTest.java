@@ -319,6 +319,20 @@ public class ImportOpTest extends RepositoryTestCase {
     }
 
     @Test
+    public void testImportWithDecoratedGeomNameAlredyInUse() throws Exception {
+        ImportOp importOp = geogit.command(ImportOp.class);
+        importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
+        importOp.setTable("table1");
+        importOp.setGeomName("label");
+        try {
+            importOp.call();
+            fail("Should throw exception complaining of parameter name already in use");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().startsWith("The provided geom name is already in use"));
+        }
+    }
+
+    @Test
     public void testImportWithFid() throws Exception {
         ImportOp importOp = geogit.command(ImportOp.class);
         importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));

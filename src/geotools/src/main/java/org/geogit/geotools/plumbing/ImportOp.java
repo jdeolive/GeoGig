@@ -223,6 +223,8 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
 
         for (AttributeDescriptor descriptor : descriptors) {
             String name = descriptor.getName().getLocalPart();
+            Preconditions.checkArgument(!name.equals(geomName),
+                    "The provided geom name is already in use by another attribute");
             if (name.equals(oldGeomName)) {
                 AttributeDescriptorImpl newDescriptor = new AttributeDescriptorImpl(
                         descriptor.getType(), new NameImpl(geomName), descriptor.getMinOccurs(),

@@ -7,6 +7,8 @@ package org.geogit.geotools.cli.porcelain;
 import java.io.IOException;
 import java.util.List;
 
+import org.geogit.api.RevFeatureType;
+import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.CommandFailedException;
 import org.geogit.cli.GeogitCLI;
@@ -15,10 +17,12 @@ import org.geogit.geotools.plumbing.GeoToolsOpException;
 import org.geogit.geotools.plumbing.ImportOp;
 import org.geotools.data.DataStore;
 import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.util.ProgressListener;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.common.base.Optional;
 
 @Parameters(commandNames = "import", commandDescription = "Import GeoJSON")
 public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand {
@@ -55,6 +59,12 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
     String geomName;
 
     /**
+     * Name to use for geometry attribute, replacing the default one ("geometry")
+     */
+    @Parameter(names = { "--geom-name-auto" }, description = "Uses the name of the geometry descriptor in the destination feature type")
+    boolean geomNameAuto;
+
+    /**
      * The attribute to use to create the feature Id
      */
     @Parameter(names = { "--fid-attrib" }, description = "Use the specified attribute to create the feature Id")
@@ -64,6 +74,8 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
     protected void runInternal(GeogitCLI cli) throws InvalidParameterException,
             CommandFailedException, IOException {
         checkParameter(geoJSONList != null && !geoJSONList.isEmpty(), "No GeoJSON specified");
+        checkParameter(geomName == null || !geomNameAuto,
+                "Cannot use --geom-name and --geom-name-auto at the same time");
 
         for (String geoJSON : geoJSONList) {
             DataStore dataStore = null;
@@ -82,8 +94,26 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
                             "The specified attribute does not exist in the selected GeoJSON file");
                 }
             }
+            if (geomNameAuto) {
+                String destPath = destTable;
+                if (destPath == null) {
+                    destPath = dataStore.getSchema(dataStore.getNames().get(0)).getTypeName();
+                }
+                Optional<RevFeatureType> ft = cli.getGeogit().command(RevObjectParse.class)
+                        .setRefSpec("WORK_HEAD:" + destPath).call(RevFeatureType.class);
+                // If there is previous data in the destination tree, we try to get the name of the
+                // geom attribute.
+                // If the destination tree does not exist, we use the default name for the geometry
+                // attribute
+                if (ft.isPresent()) {
+                    GeometryDescriptor geomDescriptor = ft.get().type().getGeometryDescriptor();
+                    if (geomDescriptor != null) {
+                        geomName = geomDescriptor.getLocalName();
+                    }
+                }
+            }
             try {
-                cli.getConsole().println("Importing from shapefile " + geoJSON);
+                cli.getConsole().println("Importing from GeoJSON " + geoJSON);
 
                 ProgressListener progressListener = cli.getProgressListener();
                 cli.getGeogit().command(ImportOp.class).setAll(true).setTable(null).setAlter(alter)
@@ -115,5 +145,4 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
         }
 
     }
-
 }

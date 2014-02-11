@@ -90,6 +90,17 @@ public class GeoJsonImportTest extends Assert {
     }
 
     @Test
+    public void testImportGeomNameAndGeomNameAuto() throws Exception {
+        GeoJsonImport importCommand = new GeoJsonImport();
+        importCommand.geoJSONList = new ArrayList<String>();
+        importCommand.geoJSONList.add(GeoJsonImport.class.getResource("sample.geojson").getFile());
+        importCommand.geomName = "the_geom";
+        importCommand.geomNameAuto = true;
+        exception.expect(InvalidParameterException.class);
+        importCommand.run(cli);
+    }
+
+    @Test
     public void testImportException() throws Exception {
         ConsoleReader consoleReader = new ConsoleReader(System.in, System.out,
                 new UnsupportedTerminal());
