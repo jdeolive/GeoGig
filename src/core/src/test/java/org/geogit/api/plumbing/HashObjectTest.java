@@ -23,16 +23,15 @@ import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevPerson;
 import org.geogit.api.RevTag;
 import org.geogit.test.integration.RepositoryTestCase;
-import org.geotools.data.DataUtilities;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.geometry.jts.WKTReader2;
+import org.jeo.feature.BasicFeature;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
 import org.junit.Test;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.GeometryDescriptor;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 public class HashObjectTest extends RepositoryTestCase {
 
@@ -117,8 +116,8 @@ public class HashObjectTest extends RepositoryTestCase {
         TestSerializableObject serializableObject = new TestSerializableObject();
         serializableObject.words = "words to serialize";
 
-        SimpleFeatureType coverageFeatureType = DataUtilities.createType(
-                "http://geoserver.org/test", "TestType", "str:String," + "str2:String,"
+        Schema coverageFeatureType = Schema.build("TestType").uri("http://geoserver.org/test")
+            .fields("str:String," + "str2:String,"
                         + "bool:Boolean," + "byte:java.lang.Byte," + "doub:Double,"
                         + "bdec:java.math.BigDecimal," + "flt:Float," + "int:Integer,"
                         + "bint:java.math.BigInteger," + "boolArray:java.lang.Object,"
@@ -126,7 +125,8 @@ public class HashObjectTest extends RepositoryTestCase {
                         + "doubleArray:java.lang.Object," + "floatArray:java.lang.Object,"
                         + "intArray:java.lang.Object," + "longArray:java.lang.Object,"
                         + "serialized:java.io.Serializable," + "randomClass:java.lang.Object,"
-                        + "pp:Point:srid=4326," + "lng:java.lang.Long," + "uuid:java.util.UUID");
+                        + "pp:Point:srid=4326," + "lng:java.lang.Long," + "uuid:java.util.UUID")
+                        .schema();
 
         coverageRevFeatureType = RevFeatureType.build(coverageFeatureType);
 
@@ -230,18 +230,18 @@ public class HashObjectTest extends RepositoryTestCase {
 
     }
 
-    protected Feature feature(SimpleFeatureType type, String id, Object... values)
+    protected Feature feature(Schema type, String id, Object... values)
             throws ParseException {
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(type);
+        List<Object> list = Lists.newArrayList();
         for (int i = 0; i < values.length; i++) {
             Object value = values[i];
-            if (type.getDescriptor(i) instanceof GeometryDescriptor) {
+            if (type.getFields().get(i).isGeometry()) {
                 if (value instanceof String) {
-                    value = new WKTReader2().read((String) value);
+                    value = new WKTReader().read((String) value);
                 }
             }
-            builder.set(i, value);
+            list.add(value);
         }
-        return builder.buildFeature(id);
+        return new BasicFeature(id, list, type);
     }
 }

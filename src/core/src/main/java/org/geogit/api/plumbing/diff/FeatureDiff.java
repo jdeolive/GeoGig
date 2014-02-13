@@ -13,7 +13,7 @@ import java.util.Set;
 
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureType;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -27,7 +27,7 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 public class FeatureDiff {
 
-    private Map<PropertyDescriptor, AttributeDiff> diffs;
+    private Map<Field, AttributeDiff> diffs;
 
     private String path;
 
@@ -35,7 +35,7 @@ public class FeatureDiff {
 
     private RevFeatureType oldFeatureType;
 
-    public FeatureDiff(String path, Map<PropertyDescriptor, AttributeDiff> diffs,
+    public FeatureDiff(String path, Map<Field, AttributeDiff> diffs,
             RevFeatureType oldFeatureType, RevFeatureType newFeatureType) {
         this.path = path;
         this.diffs = Maps.newHashMap(diffs);
@@ -58,10 +58,10 @@ public class FeatureDiff {
         this.path = path;
         this.newFeatureType = newRevFeatureType;
         this.oldFeatureType = oldRevFeatureType;
-        diffs = new HashMap<PropertyDescriptor, AttributeDiff>();
+        diffs = new HashMap<Field, AttributeDiff>();
 
-        ImmutableList<PropertyDescriptor> oldAttributes = oldRevFeatureType.sortedDescriptors();
-        ImmutableList<PropertyDescriptor> newAttributes = newRevFeatureType.sortedDescriptors();
+        ImmutableList<Field> oldAttributes = oldRevFeatureType.sortedDescriptors();
+        ImmutableList<Field> newAttributes = newRevFeatureType.sortedDescriptors();
         ImmutableList<Optional<Object>> oldValues = oldRevFeature.getValues();
         ImmutableList<Optional<Object>> newValues = newRevFeature.getValues();
         BitSet updatedAttributes = new BitSet(newValues.size());
@@ -72,7 +72,7 @@ public class FeatureDiff {
                 Optional<Object> newValue = newValues.get(idx);
                 if (!oldValue.equals(newValue) || all) {
                     if (Geometry.class
-                            .isAssignableFrom(oldAttributes.get(i).getType().getBinding())) {
+                            .isAssignableFrom(oldAttributes.get(i).getType())) {
                         diffs.put(
                                 oldAttributes.get(i),
                                 new GeometryAttributeDiff(Optional.fromNullable((Geometry) oldValue
@@ -85,7 +85,7 @@ public class FeatureDiff {
                 }
                 updatedAttributes.set(idx);
             } else {
-                if (Geometry.class.isAssignableFrom(oldAttributes.get(i).getType().getBinding())) {
+                if (Geometry.class.isAssignableFrom(oldAttributes.get(i).getType())) {
                     diffs.put(
                             oldAttributes.get(i),
                             new GeometryAttributeDiff(Optional.fromNullable((Geometry) oldValue
@@ -98,7 +98,7 @@ public class FeatureDiff {
         updatedAttributes.flip(0, newValues.size());
         for (int i = updatedAttributes.nextSetBit(0); i >= 0; i = updatedAttributes
                 .nextSetBit(i + 1)) {
-            if (Geometry.class.isAssignableFrom(newAttributes.get(i).getType().getBinding())) {
+            if (Geometry.class.isAssignableFrom(newAttributes.get(i).getType())) {
                 diffs.put(
                         oldAttributes.get(i),
                         new GeometryAttributeDiff(Optional.fromNullable((Geometry) null), Optional
@@ -115,7 +115,7 @@ public class FeatureDiff {
         return diffs.size() != 0;
     }
 
-    public Map<PropertyDescriptor, AttributeDiff> getDiffs() {
+    public Map<Field, AttributeDiff> getDiffs() {
         return ImmutableMap.copyOf(diffs);
     }
 
@@ -153,11 +153,11 @@ public class FeatureDiff {
     public String toString() {
 
         StringBuilder sb = new StringBuilder();
-        Set<Entry<PropertyDescriptor, AttributeDiff>> entries = diffs.entrySet();
-        Iterator<Entry<PropertyDescriptor, AttributeDiff>> iter = entries.iterator();
+        Set<Entry<Field, AttributeDiff>> entries = diffs.entrySet();
+        Iterator<Entry<Field, AttributeDiff>> iter = entries.iterator();
         while (iter.hasNext()) {
-            Entry<PropertyDescriptor, AttributeDiff> entry = iter.next();
-            PropertyDescriptor pd = entry.getKey();
+            Entry<Field, AttributeDiff> entry = iter.next();
+            Field pd = entry.getKey();
             AttributeDiff ad = entry.getValue();
             sb.append(pd.getName() + "\t" + ad.toString() + "\n");
         }
@@ -173,11 +173,11 @@ public class FeatureDiff {
     public String asText() {
 
         StringBuilder sb = new StringBuilder();
-        Set<Entry<PropertyDescriptor, AttributeDiff>> entries = diffs.entrySet();
-        Iterator<Entry<PropertyDescriptor, AttributeDiff>> iter = entries.iterator();
+        Set<Entry<Field, AttributeDiff>> entries = diffs.entrySet();
+        Iterator<Entry<Field, AttributeDiff>> iter = entries.iterator();
         while (iter.hasNext()) {
-            Entry<PropertyDescriptor, AttributeDiff> entry = iter.next();
-            PropertyDescriptor pd = entry.getKey();
+            Entry<Field, AttributeDiff> entry = iter.next();
+            Field pd = entry.getKey();
             AttributeDiff ad = entry.getValue();
             sb.append(pd.getName().toString() + "\t" + ad.asText() + "\n");
         }
@@ -191,11 +191,11 @@ public class FeatureDiff {
      * @return
      */
     public FeatureDiff reversed() {
-        Map<PropertyDescriptor, AttributeDiff> map = Maps.newHashMap();
-        Set<Entry<PropertyDescriptor, AttributeDiff>> entries = diffs.entrySet();
-        for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = entries.iterator(); iterator
+        Map<Field, AttributeDiff> map = Maps.newHashMap();
+        Set<Entry<Field, AttributeDiff>> entries = diffs.entrySet();
+        for (Iterator<Entry<Field, AttributeDiff>> iterator = entries.iterator(); iterator
                 .hasNext();) {
-            Entry<PropertyDescriptor, AttributeDiff> entry = iterator.next();
+            Entry<Field, AttributeDiff> entry = iterator.next();
             map.put(entry.getKey(), entry.getValue().reversed());
 
         }
@@ -219,8 +219,8 @@ public class FeatureDiff {
      * @param featureDiff the featureDiff to check against this one
      */
     public boolean conflicts(FeatureDiff featureDiff) {
-        Map<PropertyDescriptor, AttributeDiff> otherDiffs = featureDiff.diffs;
-        for (PropertyDescriptor pd : otherDiffs.keySet()) {
+        Map<Field, AttributeDiff> otherDiffs = featureDiff.diffs;
+        for (Field pd : otherDiffs.keySet()) {
             if (diffs.containsKey(pd)) {
                 AttributeDiff ad = diffs.get(pd);
                 AttributeDiff otherAd = otherDiffs.get(pd);

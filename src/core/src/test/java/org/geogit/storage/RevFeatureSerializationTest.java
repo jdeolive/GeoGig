@@ -8,22 +8,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.UUID;
 
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureBuilder;
 import org.geogit.api.RevObject.TYPE;
-import org.geotools.data.DataUtilities;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.geometry.jts.WKTReader2;
+import org.jeo.feature.BasicFeature;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.GeometryDescriptor;
 
+import com.google.common.collect.Lists;
 import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 public abstract class RevFeatureSerializationTest extends Assert {
     private String namespace1 = "http://geoserver.org/test";
@@ -46,7 +46,7 @@ public abstract class RevFeatureSerializationTest extends Assert {
             "timestamp:java.sql.Timestamp," + //
             "uuid:java.util.UUID";
 
-    protected SimpleFeatureType featureType1;
+    protected Schema featureType1;
 
     private Feature feature1_1;
 
@@ -57,7 +57,7 @@ public abstract class RevFeatureSerializationTest extends Assert {
     @Before
     public void initializeFeatureAndFeatureType() throws Exception {
         /* now we will setup our feature types and test features. */
-        featureType1 = DataUtilities.createType(namespace1, typeName1, typeSpec1);
+        featureType1 = Schema.build(typeName1).uri(namespace1).fields(typeSpec1).schema();
         // have to store timestamp in a variable since the nanos field is only accessible via setter
         // and getter
         java.sql.Timestamp timestamp = new java.sql.Timestamp(1264396155228L);
@@ -111,18 +111,18 @@ public abstract class RevFeatureSerializationTest extends Assert {
 
     }
 
-    protected Feature feature(SimpleFeatureType type, String id, Object... values)
+    protected Feature feature(Schema type, String id, Object... values)
             throws ParseException {
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(type);
+        List<Object> list = Lists.newArrayList(); 
         for (int i = 0; i < values.length; i++) {
             Object value = values[i];
-            if (type.getDescriptor(i) instanceof GeometryDescriptor) {
+            if (type.getFields().get(i).isGeometry()) {
                 if (value instanceof String) {
-                    value = new WKTReader2().read((String) value);
+                    value = new WKTReader().read((String) value);
                 }
             }
-            builder.set(i, value);
+            list.add(value);
         }
-        return builder.buildFeature(id);
+        return new BasicFeature(id, list, type);
     }
 }

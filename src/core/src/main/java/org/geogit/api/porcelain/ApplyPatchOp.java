@@ -27,14 +27,13 @@ import org.geogit.api.plumbing.diff.VerifyPatchResults;
 import org.geogit.repository.DepthSearch;
 import org.geogit.repository.WorkingTree;
 import org.geogit.storage.StagingDatabase;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.BasicFeature;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
+import org.jeo.feature.SchemaBuilder;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -176,41 +175,42 @@ public class ApplyPatchOp extends AbstractGeoGitOp<Patch> {
 
             RevFeatureType newRevFeatureType = getFeatureType(diff, feature, oldRevFeatureType);
             ImmutableList<Optional<Object>> values = feature.getValues();
-            ImmutableList<PropertyDescriptor> oldDescriptors = oldRevFeatureType
+            ImmutableList<Field> oldDescriptors = oldRevFeatureType
                     .sortedDescriptors();
-            ImmutableList<PropertyDescriptor> newDescriptors = newRevFeatureType
+            ImmutableList<Field> newDescriptors = newRevFeatureType
                     .sortedDescriptors();
-            SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(
-                    (SimpleFeatureType) newRevFeatureType.type());
-            Map<Name, Optional<?>> attrs = Maps.newHashMap();
+ 
+            Map<String, Optional<?>> attrs = Maps.newHashMap();
             for (int i = 0; i < oldDescriptors.size(); i++) {
-                PropertyDescriptor descriptor = oldDescriptors.get(i);
+                Field descriptor = oldDescriptors.get(i);
                 if (newDescriptors.contains(descriptor)) {
                     Optional<Object> value = values.get(i);
                     attrs.put(descriptor.getName(), value);
                 }
             }
-            Set<Entry<PropertyDescriptor, AttributeDiff>> featureDiffs = diff.getDiffs().entrySet();
-            for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = featureDiffs
+            Set<Entry<Field, AttributeDiff>> featureDiffs = diff.getDiffs().entrySet();
+            for (Iterator<Entry<Field, AttributeDiff>> iterator = featureDiffs
                     .iterator(); iterator.hasNext();) {
-                Entry<PropertyDescriptor, AttributeDiff> entry = iterator.next();
+                Entry<Field, AttributeDiff> entry = iterator.next();
                 if (!entry.getValue().getType().equals(TYPE.REMOVED)) {
                     Optional<?> oldValue = attrs.get(entry.getKey().getName());
                     attrs.put(entry.getKey().getName(), entry.getValue().applyOn(oldValue));
                 }
             }
-            Set<Entry<Name, Optional<?>>> entries = attrs.entrySet();
-            for (Iterator<Entry<Name, Optional<?>>> iterator = entries.iterator(); iterator
-                    .hasNext();) {
-                Entry<Name, Optional<?>> entry = iterator.next();
-                featureBuilder.set(entry.getKey(), entry.getValue().orNull());
 
-            }
+            Map<String,Object> map = Maps.transformValues(attrs, new Function<Optional<?>,Object>() {
+                @Override
+                public Object apply(Optional<?> opt) {
+                    return opt.orNull();
+                }
+            });
 
-            SimpleFeature featureToInsert = featureBuilder.buildFeature(NodeRef.nodeFromPath(path));
+            Feature featureToInsert = 
+                new BasicFeature(NodeRef.nodeFromPath(path), map, newRevFeatureType.type());
             workTree.insert(NodeRef.parentPath(path), featureToInsert);
 
         }
+        
         ImmutableList<FeatureTypeDiff> alteredTrees = patch.getAlteredTrees();
         for (FeatureTypeDiff diff : alteredTrees) {
             Optional<RevFeatureType> featureType;
@@ -230,37 +230,35 @@ public class ApplyPatchOp extends AbstractGeoGitOp<Patch> {
     private RevFeatureType getFeatureType(FeatureDiff diff, RevFeature oldFeature,
             RevFeatureType oldRevFeatureType) {
         List<String> removed = Lists.newArrayList();
-        List<AttributeDescriptor> added = Lists.newArrayList();
+        List<Field> added = Lists.newArrayList();
 
-        Set<Entry<PropertyDescriptor, AttributeDiff>> featureDiffs = diff.getDiffs().entrySet();
-        for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = featureDiffs.iterator(); iterator
+        Set<Entry<Field, AttributeDiff>> featureDiffs = diff.getDiffs().entrySet();
+        for (Iterator<Entry<Field, AttributeDiff>> iterator = featureDiffs.iterator(); iterator
                 .hasNext();) {
-            Entry<PropertyDescriptor, AttributeDiff> entry = iterator.next();
+            Entry<Field, AttributeDiff> entry = iterator.next();
             if (entry.getValue().getType() == TYPE.REMOVED) {
-                removed.add(entry.getKey().getName().getLocalPart());
+                removed.add(entry.getKey().getName());
             } else if (entry.getValue().getType() == TYPE.ADDED) {
-                PropertyDescriptor pd = entry.getKey();
-                added.add((AttributeDescriptor) pd);
+                Field pd = entry.getKey();
+                added.add((Field) pd);
             }
         }
 
-        SimpleFeatureType sft = (SimpleFeatureType) oldRevFeatureType.type();
-        List<AttributeDescriptor> descriptors = (sft).getAttributeDescriptors();
-        SimpleFeatureTypeBuilder featureTypeBuilder = new SimpleFeatureTypeBuilder();
-        featureTypeBuilder.setCRS(sft.getCoordinateReferenceSystem());
-        featureTypeBuilder.setDefaultGeometry(sft.getGeometryDescriptor().getLocalName());
-        featureTypeBuilder.setName(sft.getName());
+        Schema sft = (Schema) oldRevFeatureType.type();
+        List<Field> descriptors = (sft).getFields();
+
+        SchemaBuilder  featureTypeBuilder = new SchemaBuilder(sft.getName());
+
         for (int i = 0; i < descriptors.size(); i++) {
-            AttributeDescriptor descriptor = descriptors.get(i);
-            if (!removed.contains(descriptor.getName().getLocalPart())) {
-                featureTypeBuilder.add(descriptor);
+            Field descriptor = descriptors.get(i);
+            if (!removed.contains(descriptor.getName())) {
+                featureTypeBuilder.field(descriptor);
             }
         }
-        for (AttributeDescriptor descriptor : added) {
-            featureTypeBuilder.add(descriptor);
+        for (Field descriptor : added) {
+            featureTypeBuilder.field(descriptor);
         }
-        SimpleFeatureType featureType = featureTypeBuilder.buildFeatureType();
-
+        Schema featureType = featureTypeBuilder.schema();
         return RevFeatureType.build(featureType);
     }
 

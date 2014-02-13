@@ -14,16 +14,10 @@ import java.io.OutputStream;
 import org.geogit.api.RevFeatureType;
 import org.geogit.storage.FieldType;
 import org.geogit.storage.ObjectWriter;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.CRS.AxisOrder;
-import org.geotools.referencing.wkt.Formattable;
-import org.opengis.feature.type.GeometryType;
+import org.jeo.feature.Field;
+import org.jeo.proj.Proj;
 import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyDescriptor;
-import org.opengis.feature.type.PropertyType;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 public class FeatureTypeWriter implements ObjectWriter<RevFeatureType> {
     @Override
@@ -32,9 +26,13 @@ public class FeatureTypeWriter implements ObjectWriter<RevFeatureType> {
         writeHeader(data, "featuretype");
         writeName(object.getName(), data);
         data.writeInt(object.sortedDescriptors().size());
-        for (PropertyDescriptor desc : object.type().getDescriptors()) {
+        for (Field desc : object.type()) {
             writeProperty(desc, data);
         }
+    }
+
+    private void writeName(String name, DataOutput data) throws IOException {
+        writeName(new Name(name), data);
     }
 
     private void writeName(Name name, DataOutput data) throws IOException {
@@ -44,28 +42,27 @@ public class FeatureTypeWriter implements ObjectWriter<RevFeatureType> {
         data.writeUTF(lp == null ? "" : lp);
     }
 
-    private void writePropertyType(PropertyType type, DataOutput data) throws IOException {
+    private void writePropertyType(Field type, DataOutput data) throws IOException {
         writeName(type.getName(), data);
-        data.writeByte(FieldType.forBinding(type.getBinding()).getTag());
-        if (type instanceof GeometryType) {
-            GeometryType gType = (GeometryType) type;
-            CoordinateReferenceSystem crs = gType.getCoordinateReferenceSystem();
+        data.writeByte(FieldType.forBinding(type.getType()).getTag());
+        if (type.isGeometry()) {
+            CoordinateReferenceSystem crs = type.getCRS();
             String srsName;
             if (crs == null) {
                 srsName = "urn:ogc:def:crs:EPSG::0";
             } else {
-                final boolean longitudeFirst = CRS.getAxisOrder(crs, false) == AxisOrder.EAST_NORTH;
+                final boolean longitudeFirst = true;
                 final boolean codeOnly = true;
-                String crsCode = CRS.toSRS(crs, codeOnly);
+                Integer crsCode = Proj.epsgCode(crs);
                 if (crsCode != null) {
                     srsName = (longitudeFirst ? "EPSG:" : "urn:ogc:def:crs:EPSG::") + crsCode;
                     // check that what we are writing is actually a valid EPSG code and we will be
                     // able to decode it later. If not, we will use WKT instead
                     try {
-                        CRS.decode(srsName, longitudeFirst);
-                    } catch (NoSuchAuthorityCodeException e) {
-                        srsName = null;
-                    } catch (FactoryException e) {
+                        if (Proj.crs(srsName) == null) {
+                            srsName = null;
+                        }
+                    } catch (Exception e) {
                         srsName = null;
                     }
                 } else {
@@ -76,23 +73,18 @@ public class FeatureTypeWriter implements ObjectWriter<RevFeatureType> {
                 data.writeBoolean(true);
                 data.writeUTF(srsName);
             } else {
-                final String wkt;
-                if (crs instanceof Formattable) {
-                    wkt = ((Formattable) crs).toWKT(Formattable.SINGLE_LINE);
-                } else {
-                    wkt = crs.toWKT();
-                }
                 data.writeBoolean(false);
-                data.writeUTF(wkt);
+                data.writeUTF(crs.getParameterString());
             }
         }
     }
 
-    private void writeProperty(PropertyDescriptor attr, DataOutput data) throws IOException {
+    private void writeProperty(Field attr, DataOutput data) throws IOException {
         writeName(attr.getName(), data);
-        data.writeBoolean(attr.isNillable());
-        data.writeInt(attr.getMinOccurs());
-        data.writeInt(attr.getMaxOccurs());
-        writePropertyType(attr.getType(), data);
+        //TODO: add properties to Field?
+        data.writeBoolean(true);
+        data.writeInt(1);
+        data.writeInt(1);
+        writePropertyType(attr, data);
     }
 }

@@ -8,7 +8,6 @@ import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureBuilder;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.junit.Test;
-import org.opengis.feature.Property;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -40,20 +39,20 @@ public class RevFeatureBuilderTest extends RepositoryTestCase {
 
         ImmutableList<Optional<Object>> values = feature.getValues();
 
-        assertEquals(values.size(), points1.getProperties().size());
+        assertEquals(values.size(), points1.list().size());
 
-        for (Property prop : points1.getProperties()) {
-            assertTrue(values.contains(Optional.fromNullable(prop.getValue())));
+        for (Object prop : points1.list()) {
+            assertTrue(values.contains(Optional.fromNullable(prop)));
         }
 
         RevFeature feature2 = b.build(lines1);
 
         values = feature2.getValues();
 
-        assertEquals(values.size(), lines1.getProperties().size());
+        assertEquals(values.size(), lines1.list().size());
 
-        for (Property prop : lines1.getProperties()) {
-            assertTrue(values.contains(Optional.fromNullable(prop.getValue())));
+        for (Object prop : lines1.list()) {
+            assertTrue(values.contains(Optional.fromNullable(prop)));
         }
 
     }

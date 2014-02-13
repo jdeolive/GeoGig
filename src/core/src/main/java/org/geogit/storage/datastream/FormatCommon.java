@@ -30,19 +30,11 @@ import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeImpl;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.storage.FieldType;
-import org.geotools.feature.NameImpl;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.feature.type.BasicFeatureTypes;
-import org.geotools.referencing.CRS;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.AttributeType;
-import org.opengis.feature.type.FeatureTypeFactory;
-import org.opengis.feature.type.GeometryType;
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
+import org.jeo.proj.Proj;
 import org.opengis.feature.type.Name;
-import org.opengis.filter.Filter;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -101,12 +93,6 @@ public class FormatCommon {
      * Constant for reading TREE objects. Indicates that the next entry is a bucket.
      */
     public static final byte BUCKET = 0x02;
-
-    /**
-     * The featuretype factory to use when calling code does not provide one.
-     */
-    private static final FeatureTypeFactory DEFAULT_FEATURETYPE_FACTORY = new SimpleFeatureTypeBuilder()
-            .getFeatureTypeFactory();
 
     public static RevTag readTag(ObjectId id, DataInput in) throws IOException {
         final ObjectId commitId = readObjectId(in);
@@ -303,30 +289,25 @@ public class FormatCommon {
     }
 
     public static RevFeatureType readFeatureType(ObjectId id, DataInput in) throws IOException {
-        return readFeatureType(id, in, DEFAULT_FEATURETYPE_FACTORY);
-    }
-
-    public static RevFeatureType readFeatureType(ObjectId id, DataInput in,
-            FeatureTypeFactory typeFactory) throws IOException {
         Name name = readName(in);
         int propertyCount = in.readInt();
-        List<AttributeDescriptor> attributes = new ArrayList<AttributeDescriptor>();
+        List<Field> attributes = new ArrayList<Field>();
         for (int i = 0; i < propertyCount; i++) {
-            attributes.add(readAttributeDescriptor(in, typeFactory));
+            attributes.add(readAttributeDescriptor(in));
         }
-        SimpleFeatureType ftype = typeFactory.createSimpleFeatureType(name, attributes, null,
-                false, Collections.<Filter> emptyList(), BasicFeatureTypes.FEATURE, null);
+        Schema ftype = Schema.build(name.getLocalPart()).uri(name.getNamespaceURI())
+            .fields(attributes).schema(); 
         return new RevFeatureType(id, ftype);
     }
 
     private static Name readName(DataInput in) throws IOException {
         String namespace = in.readUTF();
         String localPart = in.readUTF();
-        return new NameImpl(namespace.length() == 0 ? null : namespace,
+        return new Name(namespace.length() == 0 ? null : namespace,
                 localPart.length() == 0 ? null : localPart);
     }
 
-    private static AttributeType readAttributeType(DataInput in, FeatureTypeFactory typeFactory)
+    private static Field readAttributeType(DataInput in)
             throws IOException {
         final Name name = readName(in);
         final byte typeTag = in.readByte();
@@ -335,41 +316,30 @@ public class FormatCommon {
             final boolean isCRSCode = in.readBoolean(); // as opposed to a raw WKT string
             final String crsText = in.readUTF();
             final CoordinateReferenceSystem crs;
-            try {
-                if (isCRSCode) {
-                    if ("urn:ogc:def:crs:EPSG::0".equals(crsText)) {
-                        crs = null;
-                    } else {
-                        boolean forceLongitudeFirst = crsText.startsWith("EPSG:");
-                        crs = CRS.decode(crsText, forceLongitudeFirst);
-                    }
+
+            if (isCRSCode) {
+                if ("urn:ogc:def:crs:EPSG::0".equals(crsText)) {
+                    crs = null;
                 } else {
-                    crs = CRS.parseWKT(crsText);
+                    crs = Proj.crs(crsText);
                 }
-            } catch (FactoryException e) {
-                throw new RuntimeException(e);
+            } else {
+                crs = Proj.crs(crsText);
             }
-            return typeFactory.createGeometryType(name, type.getBinding(), crs, false, false,
-                    Collections.<Filter> emptyList(), null, null);
+
+            return new Field(name.getLocalPart(), type.getBinding(), crs);
         } else {
-            return typeFactory.createAttributeType(name, type.getBinding(), false, false,
-                    Collections.<Filter> emptyList(), null, null);
+            return new Field(name.getLocalPart(), type.getBinding());
         }
     }
 
-    private static AttributeDescriptor readAttributeDescriptor(DataInput in,
-            FeatureTypeFactory typeFactory) throws IOException {
+    private static Field readAttributeDescriptor(DataInput in) throws IOException {
         final Name name = readName(in);
         final boolean nillable = in.readBoolean();
         final int minOccurs = in.readInt();
         final int maxOccurs = in.readInt();
-        final AttributeType type = readAttributeType(in, typeFactory);
-        if (type instanceof GeometryType)
-            return typeFactory.createGeometryDescriptor((GeometryType) type, name, minOccurs,
-                    maxOccurs, nillable, null);
-        else
-            return typeFactory.createAttributeDescriptor(type, name, minOccurs, maxOccurs,
-                    nillable, null);
+        final Field type = readAttributeType(in);
+        return type;
     }
 
     public static void writeHeader(DataOutput data, String header) throws IOException {

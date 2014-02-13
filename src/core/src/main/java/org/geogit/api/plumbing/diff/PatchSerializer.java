@@ -27,8 +27,8 @@ import org.geogit.api.RevObject.TYPE;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectWriter;
 import org.geogit.storage.text.TextSerializationFactory;
-import org.opengis.feature.Feature;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -106,7 +106,7 @@ public class PatchSerializer {
                     RevFeatureType newRevFeatureType = featureTypes.get(newMetadataId);
                     RevFeatureType oldRevFeatureType = featureTypes.get(oldMetadataId);
 
-                    Map<PropertyDescriptor, AttributeDiff> map = Maps.newHashMap();
+                    Map<Field, AttributeDiff> map = Maps.newHashMap();
                     for (int i = 1; i < lines.size(); i++) {
                         addDifference(lines.get(i), map, oldRevFeatureType, newRevFeatureType);
                     }
@@ -146,15 +146,15 @@ public class PatchSerializer {
 
     }
 
-    private static void addDifference(String s, Map<PropertyDescriptor, AttributeDiff> map,
+    private static void addDifference(String s, Map<Field, AttributeDiff> map,
             RevFeatureType oldRevFeatureType, RevFeatureType newRevFeatureType) {
         String[] tokens = s.split("\t");
-        PropertyDescriptor descriptor = oldRevFeatureType.type().getDescriptor(tokens[0]);
+        Field descriptor = oldRevFeatureType.type().field(tokens[0]);
         if (descriptor == null) {
-            descriptor = newRevFeatureType.type().getDescriptor(tokens[0]);
+            descriptor = newRevFeatureType.type().field(tokens[0]);
         }
-        AttributeDiff ad = AttributeDiffFactory.attributeDiffFromText(descriptor.getType()
-                .getBinding(), s.substring(s.indexOf("\t") + 1));
+        AttributeDiff ad = AttributeDiffFactory.attributeDiffFromText(descriptor.getType(),
+                s.substring(s.indexOf("\t") + 1));
         map.put(descriptor, ad);
     }
 

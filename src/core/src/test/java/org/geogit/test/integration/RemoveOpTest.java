@@ -26,10 +26,10 @@ import org.geogit.api.porcelain.RemoveOp;
 import org.geogit.api.porcelain.ResetOp;
 import org.geogit.api.porcelain.ResetOp.ResetMode;
 import org.geogit.repository.WorkingTree;
+import org.jeo.feature.Feature;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Suppliers;
@@ -47,7 +47,7 @@ public class RemoveOpTest extends RepositoryTestCase {
     public void testSingleFeatureRemoval() throws Exception {
         populate(false, points1, points2, points3);
 
-        String featureId = points1.getIdentifier().getID();
+        String featureId = points1.getId();
         String path = NodeRef.appendChild(pointsName, featureId);
         geogit.command(RemoveOp.class).addPathToRemove(path).call();
 
@@ -62,9 +62,9 @@ public class RemoveOpTest extends RepositoryTestCase {
     public void testMultipleRemoval() throws Exception {
         populate(false, points1, points2, points3);
 
-        String featureId = points1.getIdentifier().getID();
+        String featureId = points1.getId();
         String path = NodeRef.appendChild(pointsName, featureId);
-        String featureId2 = points2.getIdentifier().getID();
+        String featureId2 = points2.getId();
         String path2 = NodeRef.appendChild(pointsName, featureId2);
 
         geogit.command(RemoveOp.class).addPathToRemove(path).addPathToRemove(path2).call();
@@ -148,9 +148,9 @@ public class RemoveOpTest extends RepositoryTestCase {
     public void testRemovalOfAllFeaturesOfAGivenType() throws Exception {
         List<RevCommit> commits = populate(false, points1, points2, points3, lines1, lines2);
 
-        String featureId = lines1.getIdentifier().getID();
+        String featureId = lines1.getId();
         String path = NodeRef.appendChild(linesName, featureId);
-        String featureId2 = lines2.getIdentifier().getID();
+        String featureId2 = lines2.getId();
         String path2 = NodeRef.appendChild(linesName, featureId2);
 
         WorkingTree tree = geogit.command(RemoveOp.class).addPathToRemove(path)

@@ -18,8 +18,8 @@ import org.geogit.storage.FieldType;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.RevFeatureSerializationTest;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
 
 public class RevFeatureTextSerializationTest extends RevFeatureSerializationTest {
 

@@ -19,9 +19,8 @@ import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeBuilder;
 import org.geogit.storage.ObjectDatabase;
-import org.opengis.feature.type.FeatureType;
+import org.jeo.feature.Schema;
 import org.opengis.feature.type.Name;
-import org.opengis.geometry.BoundingBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,21 +126,12 @@ class RevTreeBuilder2 {
         }
     }
 
-    public Node putFeature(final ObjectId id, final String name, final BoundingBox bounds,
-            final FeatureType type) {
-        Envelope bbox;
-        if (bounds == null) {
-            bbox = null;
-        } else if (bounds instanceof Envelope) {
-            bbox = (Envelope) bounds;
-        } else {
-            bbox = new Envelope(bounds.getMinimum(0), bounds.getMaximum(0), bounds.getMinimum(1),
-                    bounds.getMaximum(1));
-        }
+    public Node putFeature(final ObjectId id, final String name, final Envelope bbox,
+            final Schema type) {
         RevFeatureType revFeatureType = revFeatureTypes.get(type.getName());
         if (null == revFeatureType) {
             revFeatureType = RevFeatureType.build(type);
-            revFeatureTypes.put(type.getName(), revFeatureType);
+            revFeatureTypes.put(new Name(type.getURI(), type.getName()), revFeatureType);
         }
         ObjectId metadataId = revFeatureType.getId().equals(defaultMetadataId) ? ObjectId.NULL
                 : revFeatureType.getId();

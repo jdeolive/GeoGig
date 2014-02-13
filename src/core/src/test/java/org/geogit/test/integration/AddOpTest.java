@@ -21,8 +21,8 @@ import org.geogit.api.porcelain.CheckoutOp;
 import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.MergeConflictsException;
 import org.geogit.api.porcelain.MergeOp;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Suppliers;
@@ -121,7 +121,7 @@ public class AddOpTest extends RepositoryTestCase {
         List<DiffEntry> unstaged = toList(repo.getWorkingTree().getUnstaged(null));
         assertEquals(2, unstaged.size());
         assertEquals(linesName, unstaged.get(0).newName());
-        assertEquals(lines1.getIdentifier().getID(), unstaged.get(1).newName());
+        assertEquals(lines1.getId(), unstaged.get(1).newName());
     }
 
     @Test

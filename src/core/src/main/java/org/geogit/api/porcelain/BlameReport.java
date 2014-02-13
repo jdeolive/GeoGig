@@ -11,7 +11,7 @@ import java.util.Map;
 import org.geogit.api.RevCommit;
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureType;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -31,8 +31,8 @@ public class BlameReport {
 
     public BlameReport(RevFeatureType featureType) {
         attributes = Lists.newArrayList();
-        for (PropertyDescriptor attribute : featureType.sortedDescriptors()) {
-            attributes.add(attribute.getName().getLocalPart());
+        for (Field attribute : featureType.sortedDescriptors()) {
+            attributes.add(attribute.getName());
         }
         this.changes = new HashMap<String, ValueAndCommit>();
 

@@ -7,21 +7,24 @@ package org.geogit.api.plumbing.merge;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.List;
+import java.util.Map;
+
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.NodeRef;
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.plumbing.diff.GeometryAttributeDiff;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.BasicFeature;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -96,16 +99,15 @@ public class MergeFeaturesOp extends AbstractGeoGitOp<Feature> {
     private Feature merge(RevFeature featureA, RevFeature featureB, RevFeature ancestor,
             RevFeatureType featureType) {
 
-        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(
-                (SimpleFeatureType) featureType.type());
+        List<Object> values = Lists.newArrayList();
         ImmutableList<Optional<Object>> valuesA = featureA.getValues();
         ImmutableList<Optional<Object>> valuesB = featureB.getValues();
         ImmutableList<Optional<Object>> valuesAncestor = ancestor.getValues();
-        ImmutableList<PropertyDescriptor> descriptors = featureType.sortedDescriptors();
+        ImmutableList<Field> descriptors = featureType.sortedDescriptors();
         for (int i = 0; i < descriptors.size(); i++) {
-            PropertyDescriptor descriptor = descriptors.get(i);
-            boolean isGeom = Geometry.class.isAssignableFrom(descriptor.getType().getBinding());
-            Name name = descriptor.getName();
+            Field descriptor = descriptors.get(i);
+            boolean isGeom = Geometry.class.isAssignableFrom(descriptor.getType());
+            String name = descriptor.getName();
             Optional<Object> valueAncestor = valuesAncestor.get(i);
             Optional<Object> valueA = valuesA.get(i);
             Optional<Object> valueB = valuesB.get(i);
@@ -118,12 +120,12 @@ public class MergeFeaturesOp extends AbstractGeoGitOp<Feature> {
                             Optional.fromNullable((Geometry) valueB.orNull()));
                     merged = (Optional<Object>) diffB.applyOn(valueA);
                 }
-                featureBuilder.set(name, merged.orNull());
+                values.add(merged.orNull());
             } else {
-                featureBuilder.set(name, valueB.orNull());
+                values.add(valueB.orNull());
             }
         }
-        return featureBuilder.buildFeature(nodeRefA.name());
+        return new BasicFeature(nodeRefA.name(), values, featureType.type());
 
     }
 

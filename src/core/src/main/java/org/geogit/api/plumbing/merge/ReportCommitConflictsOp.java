@@ -27,7 +27,7 @@ import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.FeatureDiff;
 import org.geogit.repository.DepthSearch;
 import org.geogit.repository.Repository;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Suppliers;
@@ -138,20 +138,20 @@ public class ReportCommitConflictsOp extends AbstractGeoGitOp<MergeScenarioRepor
                     RevFeatureType featureType = command(RevObjectParse.class)
                             .setObjectId(noderef.get().getMetadataId()).call(RevFeatureType.class)
                             .get();
-                    ImmutableList<PropertyDescriptor> descriptors = featureType.sortedDescriptors();
+                    ImmutableList<Field> descriptors = featureType.sortedDescriptors();
                     FeatureDiff featureDiff = command(DiffFeature.class)
                             .setOldVersion(Suppliers.ofInstance(diff.getOldObject()))
                             .setNewVersion(Suppliers.ofInstance(diff.getNewObject())).call();
-                    Set<Entry<PropertyDescriptor, AttributeDiff>> attrDiffs = featureDiff
+                    Set<Entry<Field, AttributeDiff>> attrDiffs = featureDiff
                             .getDiffs().entrySet();
                     RevFeature newFeature = command(RevObjectParse.class)
                             .setObjectId(diff.newObjectId()).call(RevFeature.class).get();
                     boolean ok = true;
-                    for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = attrDiffs
+                    for (Iterator<Entry<Field, AttributeDiff>> iterator = attrDiffs
                             .iterator(); iterator.hasNext() && ok;) {
-                        Entry<PropertyDescriptor, AttributeDiff> entry = iterator.next();
+                        Entry<Field, AttributeDiff> entry = iterator.next();
                         AttributeDiff attrDiff = entry.getValue();
-                        PropertyDescriptor descriptor = entry.getKey();
+                        Field descriptor = entry.getKey();
                         switch (attrDiff.getType()) {
                         case ADDED:
                             if (descriptors.contains(descriptor)) {

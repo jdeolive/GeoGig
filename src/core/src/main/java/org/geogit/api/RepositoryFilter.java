@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.geogit.api.RevObject.TYPE;
-import org.geotools.filter.text.cql2.CQL;
-import org.geotools.filter.text.cql2.CQLException;
-import org.opengis.feature.Feature;
-import org.opengis.filter.Filter;
+import org.jeo.feature.Feature;
+import org.jeo.filter.Filter;
+import org.jeo.filter.cql.CQL;
+import org.jeo.filter.cql.ParseException;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -102,10 +102,10 @@ public class RepositoryFilter {
                 "Missing filter parameter.");
         if (filterType.equals("CQL")) {
             try {
-                Filter newFilter = CQL.toFilter(filterText);
+                Filter newFilter = CQL.parse(filterText);
                 repositoryFilters.put(featurePath, newFilter);
                 filterDescriptions.add(new FilterDescription(featurePath, filterType, filterText));
-            } catch (CQLException e) {
+            } catch (ParseException e) {
                 Throwables.propagate(e);
             }
         }
@@ -129,7 +129,7 @@ public class RepositoryFilter {
             if (typeFilter == null) {
                 typeFilter = repositoryFilters.get("default");
             }
-            if (typeFilter.evaluate(feature)) {
+            if (typeFilter.apply(feature)) {
                 return true;
             }
         }
