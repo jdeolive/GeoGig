@@ -41,9 +41,6 @@ import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.ObjectWriter;
 import org.geotools.feature.NameImpl;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.CRS.AxisOrder;
-import org.geotools.referencing.wkt.Formattable;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.AttributeType;
@@ -52,8 +49,6 @@ import org.opengis.feature.type.GeometryType;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.feature.type.PropertyType;
 import org.opengis.filter.Filter;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.util.InternationalString;
 
@@ -409,43 +404,9 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             if (attrType instanceof GeometryType) {
                 GeometryType gt = (GeometryType) attrType;
                 CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
-                String srsName;
-                if (crs == null) {
-                    srsName = "urn:ogc:def:crs:EPSG::0";
-                } else {
-                    // use a flag to control whether the code is returned in EPSG: form instead of
-                    // urn:ogc:.. form irrespective of the org.geotools.referencing.forceXY System
-                    // property.
-                    final boolean longitudeFirst = CRS.getAxisOrder(crs, false) == AxisOrder.EAST_NORTH;
-                    boolean codeOnly = true;
-                    String crsCode = CRS.toSRS(crs, codeOnly);
-                    if (crsCode != null) {
-                        srsName = (longitudeFirst ? "EPSG:" : "urn:ogc:def:crs:EPSG::") + crsCode;
-                        // check that what we are writing is actually a valid EPSG code and we will
-                        // be able to decode it later. If not, we will use WKT instead
-                        try {
-                            CRS.decode(srsName, longitudeFirst);
-                        } catch (NoSuchAuthorityCodeException e) {
-                            srsName = null;
-                        } catch (FactoryException e) {
-                            srsName = null;
-                        }
-                    } else {
-                        srsName = null;
-                    }
-                }
+                String crsText = CrsTextSerializer.serialize(crs);
                 print(w, "\t");
-                if (srsName != null) {
-                    print(w, srsName, "\n");
-                } else {
-                    String wkt;
-                    if (crs instanceof Formattable) {
-                        wkt = ((Formattable) crs).toWKT(Formattable.SINGLE_LINE);
-                    } else {
-                        wkt = crs.toWKT();
-                    }
-                    println(w, wkt);
-                }
+                println(w, crsText);
             } else {
                 println(w, "");
             }
@@ -852,23 +813,7 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             AttributeDescriptor attributeDescriptor;
             if (Geometry.class.isAssignableFrom(type)) {
                 String crsText = tokens.get(5);
-                CoordinateReferenceSystem crs;
-                boolean crsCode = crsText.startsWith("EPSG")
-                        || crsText.startsWith("urn:ogc:def:crs:EPSG");
-                try {
-                    if (crsCode) {
-                        if ("urn:ogc:def:crs:EPSG::0".equals(crsText)) {
-                            crs = null;
-                        } else {
-                            boolean forceLongitudeFirst = crsText.startsWith("EPSG:");
-                            crs = CRS.decode(crsText, forceLongitudeFirst);
-                        }
-                    } else {
-                        crs = CRS.parseWKT(crsText);
-                    }
-                } catch (FactoryException e) {
-                    throw new IllegalArgumentException("Cannot parse CRS definition: " + crsText);
-                }
+                CoordinateReferenceSystem crs = CrsTextSerializer.deserialize(crsText);
 
                 attributeType = typeFactory.createGeometryType(name, type, crs, isIdentifiable,
                         isAbstract, restrictions, superType, description);

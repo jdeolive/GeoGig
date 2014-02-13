@@ -29,7 +29,11 @@ import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
 import org.geogit.storage.FieldType;
+import org.geogit.storage.text.CrsTextSerializer;
+import org.opengis.feature.type.GeometryType;
 import org.opengis.feature.type.PropertyDescriptor;
+import org.opengis.feature.type.PropertyType;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -95,8 +99,16 @@ public class Show extends AbstractCommand implements CLICommand {
                     for (Optional<Object> value : values) {
                         PropertyDescriptor attrib = attribs.get(i);
                         ansi.a(attrib.getName()).newline();
-                        String type = FieldType.forBinding(attrib.getType().getBinding()).name();
-                        ansi.a(type).newline();
+                        PropertyType attrType = attrib.getType();
+                        String typeName = FieldType.forBinding(attrType.getBinding()).name();
+                        if (attrType instanceof GeometryType) {
+                            GeometryType gt = (GeometryType) attrType;
+                            CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
+                            String crsText = CrsTextSerializer.serialize(crs);
+                            ansi.a(typeName).a(" ").a(crsText).newline();
+                        } else {
+                            ansi.a(typeName).newline();
+                        }
                         ansi.a(value.or("[NULL]").toString()).newline();
                         i++;
                     }
