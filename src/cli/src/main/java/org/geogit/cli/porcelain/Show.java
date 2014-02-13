@@ -134,7 +134,9 @@ public class Show extends AbstractCommand implements CLICommand {
                     RevFeature feature = (RevFeature) revObject;
                     Ansi ansi = super.newAnsi(console.getTerminal());
                     ansi.newline().fg(Color.YELLOW).a("ID:  ").reset()
-                            .a(feature.getId().toString()).newline().newline();
+                            .a(feature.getId().toString()).newline();
+                    ansi.fg(Color.YELLOW).a("FEATURE TYPE ID:  ").reset().a(ft.getId().toString())
+                            .newline().newline();
                     ansi.a("ATTRIBUTES  ").newline();
                     ansi.a("----------  ").newline();
                     ImmutableList<Optional<Object>> values = feature.getValues();
