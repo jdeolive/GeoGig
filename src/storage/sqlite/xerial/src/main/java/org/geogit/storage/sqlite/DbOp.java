@@ -121,9 +121,4 @@ public abstract class DbOp<T> {
      *
      */
     protected abstract T doRun(Connection cx) throws IOException, SQLException;
-<<<<<<< HEAD
-
-
-=======
->>>>>>> sqlite
 }

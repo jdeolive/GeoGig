@@ -18,11 +18,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-<<<<<<< HEAD
-import static org.geogit.storage.sqlite.SQLite.*;
-=======
 import static org.geogit.storage.sqlite.SQLiteStorage.*;
->>>>>>> sqlite
 
 /**
  * Base class for SQLite based graph database.
@@ -33,14 +29,11 @@ import static org.geogit.storage.sqlite.SQLiteStorage.*;
  */
 public abstract class SQLiteGraphDatabase<T> implements GraphDatabase {
 
-<<<<<<< HEAD
-    protected static final String NODES = "nodes";
-    protected static final String EDGES = "edges";
-    protected static final String PROPS = "props";
-    protected static final String MAPPINGS = "mappings";
+    final static protected String NODES = "nodes";
+    final static protected String EDGES = "edges";
+    final static protected String PROPS = "props";
+    final static protected String MAPPINGS = "mappings";
 
-=======
->>>>>>> sqlite
     final ConfigDatabase configdb;
     final Platform platform;
 
@@ -211,15 +204,9 @@ public abstract class SQLiteGraphDatabase<T> implements GraphDatabase {
     /**
      * Creates the graph tables with the following schema:
      * <pre>
-<<<<<<< HEAD
-     * nodes(id:varchar)
-     * edges(src:varchar, dst:varchar)
-     * props(nid:varchar, key:varchar, val:varchar)
-=======
      * nodes(id:varchar PRIMARY KEY)
      * edges(src:varchar, dst:varchar, PRIMARY KEY(src,dst))
      * props(nid:varchar, key:varchar, val:varchar, PRIMARY KEY(nid,key))
->>>>>>> sqlite
      * mappings(alias:varchar, nid:varchar)
      * </pre>
      * Implementations of this method should be prepared to be called multiple times, so must check

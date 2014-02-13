@@ -18,11 +18,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-<<<<<<< HEAD
-import static org.geogit.storage.sqlite.SQLite.*;
-=======
 import static org.geogit.storage.sqlite.SQLiteStorage.*;
->>>>>>> sqlite
 
 /**
  * Base class for SQLite based staging database.
@@ -109,12 +105,6 @@ public abstract class SQLiteStagingDatabase<T> extends ForwardingStagingDatabase
      */
     protected abstract void init(T cx);
 
-<<<<<<< HEAD
-    protected abstract Iterable<String> get(String namespace, String pathFilter, T cx);
-
-    protected abstract void put(String namespace, String path, String conflict, T cx);
-
-=======
     /**
      * Returns all conflicts matching the specified namespace and pathFilter.
      * 
@@ -139,6 +129,5 @@ public abstract class SQLiteStagingDatabase<T> extends ForwardingStagingDatabase
      * @param namespace The conflict namespace.
      * @param path The path of the conflict.
      */
->>>>>>> sqlite
     protected abstract void remove(String namespace, String path, T cx);
 }

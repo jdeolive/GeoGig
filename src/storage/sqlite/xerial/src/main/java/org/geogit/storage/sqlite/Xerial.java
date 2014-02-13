@@ -7,10 +7,7 @@ package org.geogit.storage.sqlite;
 import java.io.File;
 
 import org.geogit.di.GeogitModule;
-<<<<<<< HEAD
-=======
 import org.slf4j.Logger;
->>>>>>> sqlite
 import org.sqlite.SQLiteDataSource;
 
 import com.google.inject.Guice;
@@ -26,8 +23,6 @@ import com.google.inject.util.Modules;
 public class Xerial {
 
     /**
-<<<<<<< HEAD
-=======
      * Logs a (prepared) sql statement.
      * 
      * @param sql Base sql to log.
@@ -52,7 +47,6 @@ public class Xerial {
     }
 
     /**
->>>>>>> sqlite
      * Creates the injector to enable xerial sqlite storage.
      */
     public static Injector injector() {

@@ -55,10 +55,7 @@
   <modules>
    <module>core</module>
    <module>xerial</module>
-<<<<<<< HEAD
    <module>android</module>
-=======
->>>>>>> sqlite
   </modules>
 
 </project>

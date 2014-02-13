@@ -22,11 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 
-<<<<<<< HEAD
-import static org.geogit.storage.sqlite.SQLite.log;
-=======
 import static org.geogit.storage.sqlite.Xerial.log;
->>>>>>> sqlite
 
 /**
  * Config database based on xerial SQLite jdbc driver.
@@ -42,10 +38,6 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
         super(platform);
     }
 
-<<<<<<< HEAD
-    
-=======
->>>>>>> sqlite
     @Override
     protected String get(final Entry entry, Config config) {
         return new DbOp<String>() {
@@ -141,11 +133,7 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
 
                 doRemove(entry, cx);
 
-<<<<<<< HEAD
-                String sql = "INSERT INTO config (section,key,value) VALUES (?,?,?)";
-=======
                 String sql = "INSERT OR REPLACE INTO config (section,key,value) VALUES (?,?,?)";
->>>>>>> sqlite
 
                 String s = entry.section;
                 String k = entry.key;
@@ -215,12 +203,8 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
                 String sql = 
-<<<<<<< HEAD
-                    "CREATE TABLE IF NOT EXISTS config (section VARCHAR, key VARCHAR, value VARCHAR)";
-=======
                     "CREATE TABLE IF NOT EXISTS config (section VARCHAR, key VARCHAR, value VARCHAR,"
                     + " PRIMARY KEY (section,key))";
->>>>>>> sqlite
 
                 Statement st = open(cx.createStatement());
                 st.execute(log(sql, LOG));
@@ -228,12 +212,6 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
                 sql = "CREATE INDEX IF NOT EXISTS config_section_idx ON config (section)";
                 st.execute(log(sql, LOG));
 
-<<<<<<< HEAD
-                sql = "CREATE INDEX IF NOT EXISTS config_section_key_idx ON config (section,key)";
-                st.execute(log(sql, LOG));
-
-=======
->>>>>>> sqlite
                 return null;
             }
         }.run(dataSource);
