@@ -9,6 +9,7 @@ import org.geogit.di.GeogitModule;
 import org.geogit.di.caching.CachingModule;
 import org.geogit.metrics.MetricsModule;
 import org.geogit.storage.bdbje.JEStorageModule;
+import org.geogit.storage.blueprints.BlueprintsGraphModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -19,7 +20,7 @@ public class CLIInjectorBuilder extends InjectorBuilder {
     @Override
     public Injector build() {
         return Guice.createInjector(Modules.override(new GeogitModule(), new CachingModule()).with(
-                new JEStorageModule(), new MetricsModule()));
+                new JEStorageModule(), new MetricsModule(), new BlueprintsGraphModule()));
     }
 
 }

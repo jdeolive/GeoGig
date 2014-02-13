@@ -73,13 +73,22 @@ public class PushWebOp extends AbstractWebAPICommand {
                 public void write(ResponseWriter out) throws Exception {
                     out.start();
                     out.writeElement("Push", "Success");
+                    out.writeElement("dataPushed", "true");
                     out.finish();
                 }
             });
         } catch (SynchronizationException e) {
             switch (e.statusCode) {
             case NOTHING_TO_PUSH:
-                context.setResponseContent(CommandResponse.error("Nothing to push."));
+                context.setResponseContent(new CommandResponse() {
+                    @Override
+                    public void write(ResponseWriter out) throws Exception {
+                        out.start();
+                        out.writeElement("Push", "Nothing to push.");
+                        out.writeElement("dataPushed", "false");
+                        out.finish();
+                    }
+                });
                 break;
             case REMOTE_HAS_CHANGES:
                 context.setResponseContent(CommandResponse

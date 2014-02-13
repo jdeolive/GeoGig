@@ -44,6 +44,7 @@ import org.openstreetmap.osmosis.xml.common.CompressionMethod;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
@@ -396,6 +397,8 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
 
         private boolean noRaw;
 
+        private Stopwatch sw;
+
         public ConvertAndImportSink(EntityConverter converter, QueueIterator<Feature> target,
                 Platform platform, Mapping mapping, boolean noRaw, ProgressListener progressListener) {
             super();
@@ -407,6 +410,7 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
             this.latestChangeset = 0;
             this.latestTimestamp = 0;
             this.pointCache = new BDBJEPointCache(platform);
+            this.sw = new Stopwatch().start();
         }
 
         public long getUnprocessedCount() {
@@ -431,6 +435,9 @@ public class OSMImportOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
             progressListener.complete();
             target.finish();
             pointCache.dispose();
+            sw.stop();
+            progressListener.setDescription(String
+                    .format("%,d entities processed in %s", count, sw));
         }
 
         @Override

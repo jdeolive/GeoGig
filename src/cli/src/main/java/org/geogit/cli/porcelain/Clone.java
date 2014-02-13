@@ -131,7 +131,7 @@ public class Clone extends AbstractCommand implements CLICommand {
 
         GeoGIT geogit = new GeoGIT(cli.getGeogitInjector(), repoDir);
 
-        Repository repository = geogit.command(InitOp.class).call();
+        Repository repository = geogit.getOrCreateRepository();
         checkParameter(repository != null,
                 "Destination path already exists and is not an empty directory.");
         cli.setGeogit(geogit);

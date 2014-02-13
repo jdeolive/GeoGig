@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>org.geogit</groupId>
-      <artifactId>geogit-core</artifactId>
+      <artifactId>geogit-blueprints</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

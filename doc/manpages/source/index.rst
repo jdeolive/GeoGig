@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-GeoGit Manual Pages 
+GeoGit Manual Pages
 ================================================
 
 Contents:
@@ -23,6 +23,9 @@ Contents:
     fetch.rst
     formatpatch.rst
     geogit.rst
+    geojson.rst
+    geojsonimport.rst
+    geojsonexport.rst
     help.rst
     init.rst
     log.rst

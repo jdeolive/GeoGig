@@ -2,7 +2,7 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.storage;
+package org.geogit.storage.blueprints;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.geogit.api.ObjectId;
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.geogit.storage.GraphDatabase;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;

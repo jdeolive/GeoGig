@@ -52,5 +52,29 @@ Scenario: Try to show the description of a feature using its SHA-1
       And the response should contain "INTEGER"
       And the response should contain "POINT"    
       
-         
+Scenario: Try to show the description of a feature with the --raw modifier
+    Given I have a repository
+      And I stage 6 features
+      And I run the command "commit -m TestCommit"
+     When I run the command "show HEAD:Points/Points.1 --raw"          
+     Then the response should contain "STRING"
+      And the response should contain "INTEGER"
+      And the response should contain "POINT"
+      And the response should contain "sp"
+      And the response should contain "pp"
+      And the response should contain "ip"                  
+
+Scenario: Try to show the description of a 2 features with the --raw modifier
+    Given I have a repository
+      And I stage 6 features
+      And I run the command "commit -m TestCommit"
+     When I run the command "show HEAD:Points/Points.1 HEAD:Points/Points.2 --raw"          
+      And the response should contain "HEAD:Points/Points.1"
+      And the response should contain "HEAD:Points/Points.2"
+      And the response should contain "STRING"
+      And the response should contain "INTEGER"
+      And the response should contain "POINT"
+      And the response should contain "sp"
+      And the response should contain "pp"
+      And the response should contain "ip"             
       

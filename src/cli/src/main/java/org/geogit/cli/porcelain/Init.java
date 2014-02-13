@@ -13,11 +13,13 @@ import java.util.List;
 
 import org.geogit.api.GeoGIT;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.geogit.api.porcelain.ConfigException;
 import org.geogit.api.porcelain.InitOp;
 import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.CommandFailedException;
 import org.geogit.cli.GeogitCLI;
+import org.geogit.cli.InvalidParameterException;
 import org.geogit.cli.RequiresRepository;
 import org.geogit.repository.Repository;
 
@@ -45,11 +47,17 @@ public class Init extends AbstractCommand implements CLICommand {
     @Parameter(description = "Repository location (directory).", required = false, arity = 1)
     private List<String> location;
 
+    @Parameter(names = "--config", description = "Initial configuration values for new repository", required = false, variableArity = true)
+    private List<String> config;
+
     /**
      * Executes the init command.
      */
     @Override
     public void runInternal(GeogitCLI cli) throws IOException {
+        if (config != null && config.size() % 2 != 0) {
+            throw new InvalidParameterException("Configuration options must all have names and values");
+        }
 
         final File repoDir;
         {
@@ -77,7 +85,12 @@ public class Init extends AbstractCommand implements CLICommand {
             geogit = cli.getGeogit();
         }
 
-        Repository repository = geogit.command(InitOp.class).call();
+        Repository repository;
+        try {
+            repository = geogit.command(InitOp.class).setConfig(config).call();
+        } catch (ConfigException e) {
+            throw new CommandFailedException("Couldn't apply provided configuration: " + e.statusCode);
+        }
         final boolean repoExisted = repository == null;
         geogit.setRepository(repository);
         cli.setGeogit(geogit);
@@ -98,6 +111,5 @@ public class Init extends AbstractCommand implements CLICommand {
             message = "Initialized empty Geogit repository in " + repoDirectory.getAbsolutePath();
         }
         cli.getConsole().println(message);
-
     }
 }

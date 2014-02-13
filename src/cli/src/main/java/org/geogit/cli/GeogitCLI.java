@@ -242,9 +242,8 @@ public class GeogitCLI {
             throw Throwables.propagate(e);
         }
 
-        int exitCode = 0;
         GeogitCLI cli = new GeogitCLI(consoleReader);
-        cli.processCommand(args);
+        int exitCode = cli.processCommand(args);
 
         try {
             cli.close();

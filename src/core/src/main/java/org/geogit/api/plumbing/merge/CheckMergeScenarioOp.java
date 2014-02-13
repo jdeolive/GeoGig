@@ -134,20 +134,6 @@ public class CheckMergeScenarioOp extends AbstractGeoGitOp<Boolean> {
                 return !diff.getNewObject().getMetadataId()
                         .equals(diff2.getNewObject().getMetadataId());
             } else {
-                // FeatureDiff toMergeFeatureDiff = command(DiffFeature.class)
-                // .setOldVersion(Suppliers.ofInstance(diff.getOldObject()))
-                // .setNewVersion(Suppliers.ofInstance(diff.getNewObject())).call();
-                // FeatureDiff mergeIntoFeatureDiff = command(DiffFeature.class)
-                // .setOldVersion(Suppliers.ofInstance(diff2.getOldObject()))
-                // .setNewVersion(Suppliers.ofInstance(diff2.getNewObject())).call();
-                // if (toMergeFeatureDiff.conflicts(mergeIntoFeatureDiff)) {
-                // return true;
-                // } else {
-                // // if the feature types are different we report a conflict and do not try to
-                // // perform automerge
-                // return !diff.getNewObject().getMetadataId()
-                // .equals(diff2.getNewObject().getMetadataId());
-                // }
                 return !diff.newObjectId().equals(diff2.newObjectId());
 
             }

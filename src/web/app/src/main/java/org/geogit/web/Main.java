@@ -19,6 +19,7 @@ import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.di.GeogitModule;
 import org.geogit.storage.bdbje.JEStorageModule;
+import org.geogit.storage.blueprints.BlueprintsGraphModule;
 import org.geogit.web.api.repo.AffectedFeaturesResource;
 import org.geogit.web.api.repo.ApplyChangesResource;
 import org.geogit.web.api.repo.BatchedObjectResource;
@@ -27,6 +28,7 @@ import org.geogit.web.api.repo.DepthResource;
 import org.geogit.web.api.repo.EndPush;
 import org.geogit.web.api.repo.FilteredChangesResource;
 import org.geogit.web.api.repo.ManifestResource;
+import org.geogit.web.api.repo.MergeFeatureResource;
 import org.geogit.web.api.repo.ObjectExistsResource;
 import org.geogit.web.api.repo.ObjectResource;
 import org.geogit.web.api.repo.ParentResource;
@@ -120,6 +122,7 @@ public class Main extends Application {
         router.attach("/affectedfeatures", AffectedFeaturesResource.class);
         router.attach("/filteredchanges", FilteredChangesResource.class);
         router.attach("/applychanges", ApplyChangesResource.class);
+        router.attach("/mergefeature", MergeFeatureResource.class);
         return router;
     }
 
@@ -128,7 +131,7 @@ public class Main extends Application {
             @Override
             public Injector build() {
                 return Guice.createInjector(Modules.override(new GeogitModule()).with(
-                        new JEStorageModule()));
+                        new JEStorageModule(), new BlueprintsGraphModule()));
             }
         };
     }

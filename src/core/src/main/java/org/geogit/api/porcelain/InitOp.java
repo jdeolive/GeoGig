@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.ObjectId;
@@ -26,10 +27,12 @@ import org.geogit.api.plumbing.UpdateSymRef;
 import org.geogit.di.CanRunDuringConflict;
 import org.geogit.repository.Repository;
 import org.geogit.repository.RepositoryConnectionException;
+import org.geogit.storage.ConfigDatabase;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -55,6 +58,8 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
 
     private Injector injector;
 
+    private List<String> config;
+
     /**
      * Constructs a new {@code InitOp} with the specified parameters.
      * 
@@ -68,6 +73,11 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
         checkNotNull(injector);
         this.platform = platform;
         this.injector = injector;
+    }
+
+    public InitOp  setConfig(List<String> config) {
+        this.config = config;
+        return this;
     }
 
     /**
@@ -117,6 +127,14 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
             repository = injector.getInstance(Repository.class);
             if (!repoExisted) {
                 try {
+                    if (config != null) {
+                        ConfigDatabase configDB = repository.getConfigDatabase();
+                        for (List<String> pair : Iterables.partition(config, 2)) {
+                            String key = pair.get(0);
+                            String value = pair.get(1);
+                            configDB.put(key, value);
+                        }
+                    }
                     repository.configure();
                 } catch (RepositoryConnectionException e) {
                     throw new IllegalStateException(
@@ -131,6 +149,8 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
                         + e.getMessage(), e);
             }
             createSampleHooks(envHome);
+        } catch (ConfigException e) {
+            throw e;
         } catch (RuntimeException e) {
             Throwables.propagateIfInstanceOf(e, IllegalStateException.class);
             throw new IllegalStateException("Can't access repository at '"

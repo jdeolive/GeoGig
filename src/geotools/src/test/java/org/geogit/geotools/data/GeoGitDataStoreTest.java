@@ -22,11 +22,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.geogit.api.NodeRef;
+import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
 import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.porcelain.BranchCreateOp;
 import org.geogit.api.porcelain.CommitOp;
+import org.geogit.repository.Repository;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.FeatureReader;
@@ -37,6 +39,7 @@ import org.geotools.data.Transaction;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.feature.NameImpl;
 import org.geotools.geometry.jts.GeometryBuilder;
+import org.junit.Assert;
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -59,7 +62,15 @@ public class GeoGitDataStoreTest extends RepositoryTestCase {
 
     @Override
     protected void tearDownInternal() throws Exception {
+        dataStore.dispose();
         dataStore = null;
+    }
+    
+    @Test
+    public void testDispose(){
+        assertTrue(geogit.isOpen());
+        dataStore.dispose();
+        assertFalse(geogit.isOpen());
     }
 
     private List<String> getTypeNames(String head) {

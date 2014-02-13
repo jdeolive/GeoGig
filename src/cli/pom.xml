@@ -27,6 +27,11 @@
     </dependency>
     <dependency>
       <groupId>org.geogit</groupId>
+      <artifactId>geogit-blueprints</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
       <artifactId>geogit-metrics</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -78,6 +83,12 @@
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
     </dependency>
+    
+	<dependency>
+  		<groupId>net.sf.py4j</groupId>
+  		<artifactId>py4j</artifactId>
+  		<version>0.8.1</version>
+	</dependency>
 
     <!-- Test scope dependencies -->
     <dependency>

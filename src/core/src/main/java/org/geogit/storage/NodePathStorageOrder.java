@@ -60,7 +60,7 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
 
     private static final long serialVersionUID = -685759544293388523L;
 
-    private static HashOrder hashOrder = new FNV1a64bitHash();
+    private static final HashOrder hashOrder = new FNV1a64bitHash();
 
     @Override
     public int compare(String p1, String p2) {
@@ -93,7 +93,12 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
     }
 
     /**
-     * The FNV-1a hash function used as {@link Node} storage order
+     * The FNV-1a hash function used as {@link Node} storage order.
+     * <p>
+     * Note this function does not strictly produce a FNV-1a hash code but its absolute value.
+     * Reason is to avoid negative values, so the sign bit does not mess up the
+     * {@link #byteN(String, int)} function which returns the byte value of one of the 8 bytes from
+     * the hash code to assign a bucket
      */
     private static class FNV1a64bitHash extends HashOrder {
 
@@ -105,8 +110,8 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
 
         @Override
         public int compare(String p1, String p2) {
-            long hash1 = fnv(p1);
-            long hash2 = fnv(p2);
+            long hash1 = fnvAbs(p1);
+            long hash2 = fnvAbs(p2);
             if (hash1 == hash2) {
                 // hash collision, fallback to lexicographic order.
                 // unlikely but you never know. Haven't have a collision with 50 million nodes
@@ -115,7 +120,7 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
             return hash1 < hash2 ? -1 : 1;
         }
 
-        public static long fnv(CharSequence chars) {
+        private static long fnv(CharSequence chars) {
             final int length = chars.length();
 
             long hash = FNV64_OFFSET_BASIS;
@@ -129,6 +134,13 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
                 hash = update(hash, b2);
             }
             return hash;
+        }
+
+        /**
+         * @return the absolute value of the fnv-1a hash for the given char sequence
+         */
+        public static long fnvAbs(CharSequence chars) {
+            return Math.abs(fnv(chars));
         }
 
         private static long update(long hash, byte octet) {
@@ -145,24 +157,24 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
         @Override
         public int byteN(final String nodeName, final int depth) {
 
-            final long hashCode = fnv(nodeName);
+            final long hashCode = fnvAbs(nodeName);
             switch (depth) {
             case 0:
-                return (byte) (hashCode >>> 56) & 0xFF;
+                return (int) (hashCode >>> 56) & 0xFF;
             case 1:
-                return (byte) (hashCode >>> 48) & 0xFF;
+                return (int) (hashCode >>> 48) & 0xFF;
             case 2:
-                return (byte) (hashCode >>> 40) & 0xFF;
+                return (int) (hashCode >>> 40) & 0xFF;
             case 3:
-                return (byte) (hashCode >>> 32) & 0xFF;
+                return (int) (hashCode >>> 32) & 0xFF;
             case 4:
-                return (byte) (hashCode >>> 24) & 0xFF;
+                return (int) (hashCode >>> 24) & 0xFF;
             case 5:
-                return (byte) (hashCode >>> 16) & 0xFF;
+                return (int) (hashCode >>> 16) & 0xFF;
             case 6:
-                return (byte) (hashCode >>> 8) & 0xFF;
+                return (int) (hashCode >>> 8) & 0xFF;
             case 7:
-                return (byte) (hashCode >>> 0) & 0xFF;
+                return (int) (hashCode >>> 0) & 0xFF;
             default:
                 throw new IllegalArgumentException("depth too deep: " + depth);
             }

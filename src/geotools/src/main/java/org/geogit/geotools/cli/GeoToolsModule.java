@@ -17,6 +17,7 @@ import com.google.inject.Binder;
  * @see SLCommandProxy
  * @see OracleCommandProxy
  * @see SQLServerCommandProxy
+ * @see GeoJsonCommandProxy
  */
 
 public class GeoToolsModule implements CLIModule {
@@ -31,6 +32,7 @@ public class GeoToolsModule implements CLIModule {
         binder.bind(SLCommandProxy.class);
         binder.bind(OracleCommandProxy.class);
         binder.bind(SQLServerCommandProxy.class);
+        binder.bind(GeoJsonCommandProxy.class);
     }
 
 }

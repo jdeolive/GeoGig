@@ -2,7 +2,7 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.storage;
+package org.geogit.storage.blueprints;
 
 import org.geogit.api.Platform;
 

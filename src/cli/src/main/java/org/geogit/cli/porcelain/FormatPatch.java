@@ -54,7 +54,7 @@ public class FormatPatch extends AbstractCommand implements CLICommand {
      */
     @Override
     protected void runInternal(GeogitCLI cli) throws IOException {
-        checkParameter(refSpec.size() > 2, "Commit list is too long :%s", refSpec);
+        checkParameter(refSpec.size() < 3, "Commit list is too long :%s", refSpec);
 
         GeoGIT geogit = cli.getGeogit();
         checkParameter(file != null, "Patch file not specified");
