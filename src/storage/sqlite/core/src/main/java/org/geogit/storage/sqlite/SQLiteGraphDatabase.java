@@ -29,6 +29,11 @@ import static org.geogit.storage.sqlite.SQLiteStorage.*;
  */
 public abstract class SQLiteGraphDatabase<T> implements GraphDatabase {
 
+    final static protected String NODES = "nodes";
+    final static protected String EDGES = "edges";
+    final static protected String PROPS = "props";
+    final static protected String MAPPINGS = "mappings";
+
     final ConfigDatabase configdb;
     final Platform platform;
 

@@ -42,8 +42,6 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialObjectDatabase.class);
 
-    static final String OBJECTS = "objects";
-
     final SQLiteDataSource dataSource;
 
     final int partitionSize = 10 * 1000; // TODO make configurable

@@ -33,11 +33,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialGraphDatabase.class);
 
-    static final String NODES = "nodes";
-    static final String EDGES = "edges";
-    static final String PROPS = "props";
-    static final String MAPPINGS = "mappings";
-    
     final SQLiteDataSource dataSource;
 
     @Inject
@@ -170,7 +165,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 PreparedStatement ps = open(cx.prepareStatement(log(sql,LOG,from)));
                 ps.setString(1, from);
                 ps.setString(2, to);
-
                 ps.executeUpdate();
                 return null;
             }
@@ -204,7 +198,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ps.setString(1, node);
                 ps.setString(2, key);
                 ps.setString(3, val);
-
                 ps.executeUpdate();
                 return null;
             }
