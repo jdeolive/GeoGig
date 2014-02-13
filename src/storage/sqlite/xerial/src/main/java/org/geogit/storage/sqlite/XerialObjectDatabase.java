@@ -180,7 +180,6 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
     @Override
     public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
         Preconditions.checkState(isOpen(), "No open database connection");
-
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {

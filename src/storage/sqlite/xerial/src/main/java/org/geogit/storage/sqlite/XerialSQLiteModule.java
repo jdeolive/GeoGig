@@ -16,13 +16,10 @@ import com.google.inject.Scopes;
 
 /**
  * Module for the Xerial SQLite storage backend.
-<<<<<<< HEAD
-=======
  * <p>
  * More information about the SQLite jdbc driver available at 
  * {@link https://bitbucket.org/xerial/sqlite-jdbc}.
  * </p>
->>>>>>> sqlite
  * 
  * @author Justin Deoliveira, Boundless
  */

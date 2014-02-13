@@ -44,6 +44,7 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
             protected Void doRun(Connection cx) throws SQLException {
                 String sql = format("CREATE TABLE IF NOT EXISTS %s (namespace VARCHAR, "
                     + "path VARCHAR, conflict VARCHAR, PRIMARY KEY(namespace,path))", CONFLICTS);
+
                 LOG.debug(sql);
                 open(cx.createStatement()).execute(sql);
 
@@ -78,6 +79,7 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
                 String sql = format("INSERT OR REPLACE INTO %s VALUES (?,?,?)", CONFLICTS);
+
                 log(sql, LOG, namespace, path, conflict);
 
                 PreparedStatement ps = open(cx.prepareStatement(sql));
