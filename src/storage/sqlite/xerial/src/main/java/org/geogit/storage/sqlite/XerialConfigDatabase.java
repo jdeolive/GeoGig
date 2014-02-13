@@ -68,7 +68,7 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
 
                 Map<String,String> all = Maps.newLinkedHashMap();
                 while(rs.next()) {
-                    String entry = String.format("%.%", rs.getString(1), rs.getString(2));
+                    String entry = String.format("%s.%s", rs.getString(1), rs.getString(2));
                     all.put(entry, rs.getString(3));
                 }
 
