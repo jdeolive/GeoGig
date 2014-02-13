@@ -352,6 +352,35 @@ public class RebaseOpTest extends RepositoryTestCase {
     }
 
     @Test
+    public void testRebaseEqualChanges() throws Exception {
+
+        insertAndAdd(points1);
+        final RevCommit c1 = geogit.command(CommitOp.class).setMessage("commit for " + idP1).call();
+
+        // create branch1 and checkout
+        geogit.command(BranchCreateOp.class).setAutoCheckout(true).setName("branch1").call();
+        insertAndAdd(points1_modified);
+        RevCommit c2 = geogit.command(CommitOp.class).setMessage("commit in branch").call();
+
+        // checkout master and make a commit with identical changes
+        geogit.command(CheckoutOp.class).setSource("master").call();
+        insertAndAdd(points1_modified);
+        final RevCommit c3 = geogit.command(CommitOp.class).setMessage("commit in master").call();
+
+        geogit.command(RefParse.class).setName("branch1").call().get();
+        Optional<Ref> master = geogit.command(RefParse.class).setName("master").call();
+
+        geogit.command(CheckoutOp.class).setSource("branch1").call();
+        geogit.command(RebaseOp.class)
+                .setUpstream(Suppliers.ofInstance(master.get().getObjectId())).call();
+
+        Iterator<RevCommit> log = geogit.command(LogOp.class).call();
+        assertEquals(c2.getMessage(), log.next().getMessage());
+        assertEquals(c3, log.next());
+
+    }
+
+    @Test
     public void testRebaseNoUpstream() throws Exception {
         exception.expect(IllegalStateException.class);
         geogit.command(RebaseOp.class).call();

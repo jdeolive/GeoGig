@@ -25,6 +25,7 @@ import org.geogit.web.api.commands.PushWebOp;
 import org.geogit.web.api.commands.RefParseWeb;
 import org.geogit.web.api.commands.RemoteWebOp;
 import org.geogit.web.api.commands.RemoveWebOp;
+import org.geogit.web.api.commands.ResolveConflict;
 import org.geogit.web.api.commands.Status;
 import org.geogit.web.api.commands.TagWebOp;
 import org.geogit.web.api.commands.UpdateRefWeb;
@@ -89,6 +90,8 @@ public class CommandBuilder {
             command = buildAdd(options);
         } else if ("remove".equalsIgnoreCase(commandName)) {
             command = buildRemove(options);
+        } else if ("resolveconflict".equalsIgnoreCase(commandName)) {
+            command = buildResolveConflict(options);
         } else if ("version".equalsIgnoreCase(commandName)) {
             command = buildVersion(options);
         } else {
@@ -149,6 +152,8 @@ public class CommandBuilder {
         command.setPaths(Arrays.asList(options.getValuesArray("path")));
         command.setSince(options.getFirstValue("since"));
         command.setUntil(options.getFirstValue("until"));
+        command.setSinceTime(options.getFirstValue("sinceTime"));
+        command.setUntilTime(options.getFirstValue("untilTime"));
         command.setPage(parseInt(options, "page", 0));
         command.setElementsPerPage(parseInt(options, "show", 30));
         command.setFirstParentOnly(Boolean.valueOf(options
@@ -254,6 +259,7 @@ public class CommandBuilder {
         RemoteWebOp command = new RemoteWebOp();
         command.setList(Boolean.valueOf(options.getFirstValue("list", "false")));
         command.setRemove(Boolean.valueOf(options.getFirstValue("remove", "false")));
+        command.setPing(Boolean.valueOf(options.getFirstValue("ping", "false")));
         command.setRemoteName(options.getFirstValue("remoteName", null));
         command.setRemoteURL(options.getFirstValue("remoteURL", null));
         return command;
@@ -431,6 +437,13 @@ public class CommandBuilder {
         RemoveWebOp command = new RemoveWebOp();
         command.setPath(options.getFirstValue("path", null));
         command.setRecursive(Boolean.valueOf(options.getFirstValue("recursive", "false")));
+        return command;
+    }
+
+    static ResolveConflict buildResolveConflict(ParameterSet options) {
+        ResolveConflict command = new ResolveConflict();
+        command.setPath(options.getFirstValue("path", null));
+        command.setFeatureObjectId(options.getFirstValue("objectid", null));
         return command;
     }
 }

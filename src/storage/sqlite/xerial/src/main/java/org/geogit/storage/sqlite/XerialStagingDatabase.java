@@ -5,7 +5,11 @@
 package org.geogit.storage.sqlite;
 
 import static java.lang.String.format;
+<<<<<<< HEAD
 import static org.geogit.storage.sqlite.SQLite.log;
+=======
+import static org.geogit.storage.sqlite.Xerial.log;
+>>>>>>> sqlite
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -43,7 +47,11 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
             @Override
             protected Void doRun(Connection cx) throws SQLException {
                 String sql = format("CREATE TABLE IF NOT EXISTS %s (namespace VARCHAR, "
+<<<<<<< HEAD
                     + "path VARCHAR, conflict VARCHAR)", CONFLICTS);
+=======
+                    + "path VARCHAR, conflict VARCHAR, PRIMARY KEY(namespace,path))", CONFLICTS);
+>>>>>>> sqlite
                 
                 LOG.debug(sql);
                 open(cx.createStatement()).execute(sql);
@@ -78,7 +86,11 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
+<<<<<<< HEAD
                 String sql = format("INSERT INTO %s VALUES (?,?,?)", CONFLICTS);
+=======
+                String sql = format("INSERT OR REPLACE INTO %s VALUES (?,?,?)", CONFLICTS);
+>>>>>>> sqlite
 
                 log(sql, LOG, namespace, path, conflict);
 

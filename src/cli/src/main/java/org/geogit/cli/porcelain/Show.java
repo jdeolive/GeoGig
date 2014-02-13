@@ -60,7 +60,6 @@ public class Show extends AbstractCommand implements CLICommand {
      */
     @Override
     public void runInternal(GeogitCLI cli) throws IOException {
-        checkParameter(refs.size() < 2, "Only one refspec allowed");
         checkParameter(!refs.isEmpty(), "A refspec must be specified");
         if (raw) {
             printRaw(cli);
@@ -94,7 +93,10 @@ public class Show extends AbstractCommand implements CLICommand {
                     ImmutableList<Optional<Object>> values = feature.getValues();
                     int i = 0;
                     for (Optional<Object> value : values) {
-                        ansi.a(attribs.get(i).getName()).newline();
+                        PropertyDescriptor attrib = attribs.get(i);
+                        ansi.a(attrib.getName()).newline();
+                        String type = FieldType.forBinding(attrib.getType().getBinding()).name();
+                        ansi.a(type).newline();
                         ansi.a(value.or("[NULL]").toString()).newline();
                         i++;
                     }

@@ -35,12 +35,9 @@ public class GenericAttributeDiffImpl implements AttributeDiff {
     @Override
     public TYPE getType() {
         TYPE type;
-        if ((newValue == null || !newValue.isPresent())
-                && (oldValue == null || !oldValue.isPresent())) {
-            type = TYPE.NO_CHANGE;
-        } else if (newValue == null || !newValue.isPresent()) {
+        if (newValue == null) {
             type = TYPE.REMOVED;
-        } else if (oldValue == null || !oldValue.isPresent()) {
+        } else if (oldValue == null) {
             type = TYPE.ADDED;
         } else if (oldValue.equals(newValue)) {
             type = TYPE.NO_CHANGE;
@@ -73,7 +70,11 @@ public class GenericAttributeDiffImpl implements AttributeDiff {
     }
 
     private CharSequence attributeValueAsString(Optional<?> value) {
-        return TextValueSerializer.asString(Optional.fromNullable((Object) value.orNull()));
+        if (value.isPresent()) {
+            return TextValueSerializer.asString(Optional.fromNullable((Object) value.get()));
+        } else {
+            return "NULL";
+        }
     }
 
     @Override

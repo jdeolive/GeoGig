@@ -4,6 +4,14 @@
  */
 package org.geogit.storage.sqlite;
 
+<<<<<<< HEAD
+=======
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
+import static org.geogit.storage.sqlite.SQLiteStorage.FORMAT_NAME;
+import static org.geogit.storage.sqlite.SQLiteStorage.VERSION;
+
+>>>>>>> sqlite
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +37,7 @@ import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.datastream.DataStreamSerializationFactory;
 
 import com.google.common.base.Function;
+<<<<<<< HEAD
 import com.google.common.base.Functions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.AbstractIterator;
@@ -39,6 +48,11 @@ import com.google.common.collect.Lists;
 import static org.geogit.storage.sqlite.SQLite.*;
 import static com.google.common.collect.Iterables.*;
 
+=======
+import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
+
+>>>>>>> sqlite
 /**
  * Base class for SQLite based object database.
  * 
@@ -48,8 +62,11 @@ import static com.google.common.collect.Iterables.*;
  */
 public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
 
+<<<<<<< HEAD
     protected static final String OBJECTS = "objects";
 
+=======
+>>>>>>> sqlite
     final Platform platform;
     final ConfigDatabase configdb;
 
@@ -275,7 +292,11 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     /**
      * Creates the object table with the following schema:
      * <pre>
+<<<<<<< HEAD
      * objects(id:varchar,object:blob)
+=======
+     * objects(id:varchar PRIMARY KEY, object:blob)
+>>>>>>> sqlite
      * </pre>
      * Implementations of this method should be prepared to be called multiple times, so must check
      * if the table already exists.

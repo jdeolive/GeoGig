@@ -467,6 +467,18 @@ public class ResponseWriter {
     }
 
     /**
+     * Writes the response for the {@link RemoteWebOp} command to the stream.
+     * 
+     * @param success whether or not the ping was successful
+     * @throws XMLStreamException
+     */
+    public void writeRemotePingResponse(boolean success) throws XMLStreamException {
+        out.writeStartElement("ping");
+        writeElement("success", Boolean.toString(success));
+        out.writeEndElement();
+    }
+
+    /**
      * Writes the response for the {@link TagWebOp} command to the stream.
      * 
      * @param tags the list of {@link RevTag}s of this repository
@@ -556,6 +568,15 @@ public class ResponseWriter {
         while (iter.hasNext()) {
             Entry<PropertyDescriptor, AttributeDiff> entry = iter.next();
             out.writeStartElement("diff");
+            PropertyType attrType = entry.getKey().getType();
+            if (attrType instanceof GeometryType) {
+                writeElement("geometry", "true");
+                GeometryType gt = (GeometryType) attrType;
+                CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
+                if (crs != null) {
+                    writeElement("crs", CRS.toSRS(crs));
+                }
+            }
             writeElement("attributename", entry.getKey().getName().toString());
             writeElement("changetype", entry.getValue().getType().toString());
             if (entry.getValue().getOldValue() != null

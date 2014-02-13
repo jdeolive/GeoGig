@@ -26,11 +26,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteDataSource;
 
+<<<<<<< HEAD
+=======
+import com.google.common.base.Preconditions;
+>>>>>>> sqlite
 import com.google.common.collect.Iterators;
 import com.google.common.io.ByteStreams;
 import com.google.inject.Inject;
 
+<<<<<<< HEAD
 import static org.geogit.storage.sqlite.SQLite.log;
+=======
+import static org.geogit.storage.sqlite.Xerial.log;
+>>>>>>> sqlite
 
 /**
  * Object database based on Xerial SQLite jdbc driver.
@@ -41,6 +49,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialObjectDatabase.class);
 
+<<<<<<< HEAD
+=======
+    static final String OBJECTS = "objects";
+
+>>>>>>> sqlite
     final SQLiteDataSource dataSource;
 
     final int partitionSize = 10 * 1000; // TODO make configurable
@@ -81,12 +94,17 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
             @Override
             protected Void doRun(Connection cx) throws SQLException {
                 String sql = 
+<<<<<<< HEAD
                     format("CREATE TABLE IF NOT EXISTS %s (id varchar, object blob)", OBJECTS);
                 open(cx.createStatement()).execute(log(sql,LOG));
 
                 sql = format("CREATE INDEX IF NOT EXISTS %s_id_index ON %s (id)", OBJECTS, OBJECTS);
                 open(cx.createStatement()).execute(log(sql,LOG));
 
+=======
+                    format("CREATE TABLE IF NOT EXISTS %s (id varchar PRIMARY KEY, object blob)", OBJECTS);
+                open(cx.createStatement()).execute(log(sql,LOG));
+>>>>>>> sqlite
                 return null;
             }
         }.run(cx);
@@ -150,6 +168,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {
+<<<<<<< HEAD
                 String sql = format("SELECT count(*) FROM %s WHERE id = ?", OBJECTS);
 
                 PreparedStatement ps = open(cx.prepareStatement(log(sql,LOG,id)));
@@ -171,6 +190,15 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
                 upsert.setString(2, id);
 
                 upsert.executeUpdate();
+=======
+                String sql = format("INSERT OR IGNORE INTO %s (id,object) VALUES (?,?)", OBJECTS);
+
+                PreparedStatement ps = open(cx.prepareStatement(log(sql,LOG, id, obj)));
+                ps.setString(1, id);
+                ps.setBytes(2, ByteStreams.toByteArray(obj));
+                ps.executeUpdate();
+
+>>>>>>> sqlite
                 return null;
             }
         }.run(cx);
@@ -196,6 +224,10 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
      */
     @Override
     public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
+<<<<<<< HEAD
+=======
+        Preconditions.checkState(isOpen(), "No open database connection");
+>>>>>>> sqlite
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {
@@ -224,7 +256,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return null;
             }
+<<<<<<< HEAD
         }.run(dataSource);
+=======
+        }.run(cx);
+>>>>>>> sqlite
     }
 
     void notifyInserted(int[] inserted, List<? extends RevObject> objects, BulkOpListener listener) {
@@ -240,6 +276,10 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
      */
     @Override
     public long deleteAll(final Iterator<ObjectId> ids, final BulkOpListener listener) {
+<<<<<<< HEAD
+=======
+        Preconditions.checkState(isOpen(), "No open database connection");
+>>>>>>> sqlite
         return new DbOp<Long>() {
             @Override
             protected Long doRun(Connection cx) throws SQLException, IOException {
@@ -267,7 +307,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return count;
             }
+<<<<<<< HEAD
         }.run(dataSource);
+=======
+        }.run(cx);
+>>>>>>> sqlite
     }
 
     long notifyDeleted(int[] deleted, List<ObjectId> ids, BulkOpListener listener) {

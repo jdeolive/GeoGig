@@ -37,7 +37,7 @@ import com.google.inject.Inject;
 /**
  * Reports conflicts between changes introduced by a given commit and the last commit of the current
  * head. That should give information about whether the specified commit can be applied safely on
- * the current branch without overwriting changes It classifies the changes of the commit in
+ * the current branch without overwriting changes. It classifies the changes of the commit in
  * conflicting or unconflicting, so they can be applied partially
  */
 public class ReportCommitConflictsOp extends AbstractGeoGitOp<MergeScenarioReport> {
@@ -144,6 +144,8 @@ public class ReportCommitConflictsOp extends AbstractGeoGitOp<MergeScenarioRepor
                             .setNewVersion(Suppliers.ofInstance(diff.getNewObject())).call();
                     Set<Entry<PropertyDescriptor, AttributeDiff>> attrDiffs = featureDiff
                             .getDiffs().entrySet();
+                    RevFeature newFeature = command(RevObjectParse.class)
+                            .setObjectId(diff.newObjectId()).call(RevFeature.class).get();
                     boolean ok = true;
                     for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = attrDiffs
                             .iterator(); iterator.hasNext() && ok;) {
@@ -165,10 +167,16 @@ public class ReportCommitConflictsOp extends AbstractGeoGitOp<MergeScenarioRepor
                             for (int i = 0; i < descriptors.size(); i++) {
                                 if (descriptors.get(i).equals(descriptor)) {
                                     Optional<Object> value = feature.getValues().get(i);
-                                    if (!attrDiff.canBeAppliedOn(value)) {
-                                        ok = false;
+                                    Optional<Object> newValue = newFeature.getValues().get(i);
+                                    if (!newValue.equals(value)) { // if it's going to end up
+                                                                   // setting the same value, it is
+                                                                   // compatible, so no need to
+                                                                   // check
+                                        if (!attrDiff.canBeAppliedOn(value)) {
+                                            ok = false;
+                                        }
+                                        break;
                                     }
-                                    break;
                                 }
                             }
                         }

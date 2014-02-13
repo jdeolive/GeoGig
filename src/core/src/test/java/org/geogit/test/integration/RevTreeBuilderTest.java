@@ -4,8 +4,13 @@
  */
 package org.geogit.test.integration;
 
+import static org.geogit.api.plumbing.LsTreeOp.Strategy.FEATURES_ONLY;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -17,13 +22,16 @@ import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeBuilder;
 import org.geogit.api.plumbing.FindTreeChild;
+import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.diff.DepthTreeIterator;
 import org.geogit.api.plumbing.diff.DepthTreeIterator.Strategy;
+import org.geogit.storage.NodeStorageOrder;
 import org.geogit.storage.ObjectDatabase;
 import org.junit.Test;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class RevTreeBuilderTest extends RepositoryTestCase {
@@ -324,5 +332,59 @@ public class RevTreeBuilderTest extends RepositoryTestCase {
 
         Node ref = Node.create(key, FAKE_ID, FAKE_ID, TYPE.FEATURE, boundsOf(points1));
         tree.put(ref);
+    }
+
+    @Test
+    public void testNodeOrderPassSplitThreshold() {
+        final int splitThreshold = RevTree.NORMALIZED_SIZE_LIMIT;
+        List<Node> expectedOrder = nodes(splitThreshold + 1);
+        Collections.sort(expectedOrder, new NodeStorageOrder());
+
+        final List<Node> flat = expectedOrder.subList(0, splitThreshold);
+        RevTreeBuilder flatTreeBuilder = new RevTreeBuilder(odb);
+        RevTreeBuilder bucketTreeBuilder = new RevTreeBuilder(odb);
+
+        for (Node n : flat) {
+            flatTreeBuilder.put(n);
+            bucketTreeBuilder.put(n);
+        }
+        bucketTreeBuilder.put(expectedOrder.get(expectedOrder.size() - 1));
+        RevTree flatTree = flatTreeBuilder.build();
+        RevTree bucketTree = bucketTreeBuilder.build();
+        assertFalse(flatTree.buckets().isPresent());
+        assertTrue(bucketTree.buckets().isPresent());
+        odb.put(flatTree);
+        odb.put(bucketTree);
+
+        List<Node> flatNodes = lstree(flatTree);
+        assertEquals(flat, flatNodes);
+
+        List<Node> splitNodes = lstree(bucketTree);
+        assertEquals(expectedOrder, splitNodes);
+    }
+
+    private List<Node> lstree(RevTree tree) {
+        Iterator<NodeRef> refs = geogit.command(LsTreeOp.class)
+                .setReference(tree.getId().toString()).setStrategy(FEATURES_ONLY).call();
+        List<Node> nodes = new ArrayList<Node>();
+        while (refs.hasNext()) {
+            nodes.add(refs.next().getNode());
+        }
+        return nodes;
+    }
+
+    private List<Node> nodes(int size) {
+        List<Node> nodes = Lists.newArrayListWithCapacity(size);
+        for (int i = 0; i < size; i++) {
+            nodes.add(node(i));
+        }
+        return nodes;
+    }
+
+    private static Node node(int i) {
+        String key = String.valueOf(i);
+        ObjectId oid = ObjectId.forString(key);
+        Node node = Node.create(key, oid, ObjectId.NULL, TYPE.FEATURE);
+        return node;
     }
 }

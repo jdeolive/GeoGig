@@ -32,6 +32,7 @@ import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevObject;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevPerson;
+import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeImpl;
 import org.geogit.storage.FieldType;
@@ -175,6 +176,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             return (ObjectWriter<T>) FEATURETYPE_WRITER;
         case TREE:
             return (ObjectWriter<T>) TREE_WRITER;
+        case TAG:
+            return (ObjectWriter<T>) TAG_WRITER;
         default:
             throw new IllegalArgumentException("Unknown or unsupported object type: " + type);
         }
@@ -192,6 +195,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             return (ObjectReader<T>) FEATURETYPE_READER;
         case TREE:
             return (ObjectReader<T>) TREE_READER;
+        case TAG:
+            return (ObjectReader<T>) TAG_READER;
         default:
             throw new IllegalArgumentException("Unknown or unsupported object type: " + type);
         }
@@ -517,6 +522,42 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
 
     };
 
+    /**
+     * Tag writer.
+     * <p>
+     * Output format:
+     * 
+     * <pre>
+     * {@code TAG\n}
+     * {@code "name" + "\t" +  <tagname> + "\n"}
+     * {@code "commitid" + "\t" +  <comitid> + "\n"}  
+     * {@code "message" + "\t" +  <message> + "\n"}
+     *  {@code "tagger" + "\t" +  <tagger name>  + " " + <tagger email>  + "\t" + <tagger> + "\t" + <tagger_timezone_offset> + "\n"}
+     * </pre>
+     * 
+     */
+    private static final TextWriter<RevTag> TAG_WRITER = new TextWriter<RevTag>() {
+
+        @Override
+        protected void print(RevTag tag, Writer w) throws IOException {
+            println(w, "name\t", tag.getName());
+            println(w, "commitid\t", tag.getCommitId().toString());
+            println(w, "message\t", tag.getMessage());
+            print(w, "tagger");
+            print(w, "\t");
+            print(w, tag.getTagger().getName().or(" "));
+            print(w, "\t");
+            print(w, tag.getTagger().getEmail().or(" "));
+            print(w, "\t");
+            print(w, Long.toString(tag.getTagger().getTimestamp()));
+            print(w, "\t");
+            print(w, Long.toString(tag.getTagger().getTimeZoneOffset()));
+            println(w);
+            w.flush();
+        }
+
+    };
+
     private abstract static class TextReader<T extends RevObject> implements ObjectReader<T> {
 
         @Override
@@ -598,6 +639,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 return TREE_READER.read(id, read, type);
             case FEATURETYPE:
                 return FEATURETYPE_READER.read(id, read, type);
+            case TAG:
+                return TAG_READER.read(id, read, type);
             default:
                 throw new IllegalArgumentException("Unknown object type " + type);
             }
@@ -916,6 +959,47 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 throw new IllegalArgumentException("Wrong bbox definition: " + s);
             }
 
+        }
+
+    };
+
+    /**
+     * Tag reader.
+     * <p>
+     * Parses a tag of the format:
+     * 
+     * <pre>
+     * {@code TAG\n}
+     * {@code "name" + "\t" +  <tagname> + "\n"}
+     * {@code "commitid" + "\t" +  <comitid> + "\n"}  
+     * {@code "message" + "\t" +  <message> + "\n"}
+     *  {@code "tagger" + "\t" +  <tagger name>  + " " + <tagger email>  + "\t" + <tagger> + "\t" + <tagger_timezone_offset> + "\n"}
+     * </pre>
+     * 
+     */
+    private static final TextReader<RevTag> TAG_READER = new TextReader<RevTag>() {
+
+        @Override
+        protected RevTag read(ObjectId id, BufferedReader reader, TYPE type) throws IOException {
+            Preconditions.checkArgument(TYPE.TAG.equals(type), "Wrong type: %s", type.name());
+            String name = parseLine(requireLine(reader), "name");
+            String message = parseLine(requireLine(reader), "message");
+            String commitId = parseLine(requireLine(reader), "commitid");
+            RevPerson tagger = parsePerson(requireLine(reader));
+            RevTag tag = new RevTag(id, name, ObjectId.valueOf(commitId), message, tagger);
+            return tag;
+        }
+
+        private RevPerson parsePerson(String line) throws IOException {
+            String[] tokens = line.split("\t");
+            String header = "tagger";
+            Preconditions.checkArgument(header.equals(tokens[0]), "Expected field %s, got '%s'",
+                    header, tokens[0]);
+            String name = tokens[1].trim().isEmpty() ? null : tokens[1];
+            String email = tokens[2].trim().isEmpty() ? null : tokens[2];
+            long timestamp = Long.parseLong(tokens[3]);
+            int offset = Integer.parseInt(tokens[4]);
+            return new RevPerson(name, email, timestamp, offset);
         }
 
     };

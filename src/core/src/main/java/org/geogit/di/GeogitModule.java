@@ -25,12 +25,12 @@ import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.RefDatabase;
 import org.geogit.storage.StagingDatabase;
-import org.geogit.storage.TinkerGraphDatabase;
 import org.geogit.storage.datastream.DataStreamSerializationFactory;
 import org.geogit.storage.fs.FileObjectDatabase;
 import org.geogit.storage.fs.FileRefDatabase;
 import org.geogit.storage.fs.IniConfigDatabase;
 import org.geogit.storage.memory.HeapDeduplicationService;
+import org.geogit.storage.memory.HeapGraphDatabase;
 import org.geogit.storage.memory.HeapStagingDatabase;
 
 import com.google.common.base.Throwables;
@@ -74,7 +74,7 @@ public class GeogitModule extends AbstractModule {
         bind(StagingArea.class).to(Index.class).in(Scopes.SINGLETON);
         bind(StagingDatabase.class).to(HeapStagingDatabase.class).in(Scopes.SINGLETON);
         bind(WorkingTree.class).in(Scopes.SINGLETON);
-        bind(GraphDatabase.class).to(TinkerGraphDatabase.class).in(Scopes.SINGLETON);
+        bind(GraphDatabase.class).to(HeapGraphDatabase.class).in(Scopes.SINGLETON);
 
         bind(ObjectDatabase.class).to(FileObjectDatabase.class).in(Scopes.SINGLETON);
         bind(RefDatabase.class).to(FileRefDatabase.class).in(Scopes.SINGLETON);

@@ -22,6 +22,7 @@ import org.geogit.api.plumbing.RevParse;
 import org.geogit.api.plumbing.diff.AttributeDiff;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.FeatureDiff;
+import org.geogit.di.CanRunDuringConflict;
 import org.opengis.feature.type.PropertyDescriptor;
 
 import com.google.common.base.Optional;
@@ -33,6 +34,7 @@ import com.google.common.base.Suppliers;
  * feature
  * 
  */
+@CanRunDuringConflict
 public class BlameOp extends AbstractGeoGitOp<BlameReport> {
 
     private String path;

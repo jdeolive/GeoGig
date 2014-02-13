@@ -75,16 +75,6 @@
       <artifactId>compress-lzf</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.tinkerpop.blueprints</groupId>
-      <artifactId>blueprints-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.tinkerpop.gremlin</groupId>
-      <artifactId>gremlin-java</artifactId>
-    </dependency>
-    
     <!-- Test scope dependencies -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
