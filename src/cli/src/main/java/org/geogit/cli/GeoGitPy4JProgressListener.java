@@ -12,6 +12,8 @@ package org.geogit.cli;
  */
 public interface GeoGitPy4JProgressListener {
 
-    public void setProgress(int i);
+    public void setProgress(float i);
+
+    public void setProgressText(String s);
 
 }

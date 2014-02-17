@@ -13,6 +13,8 @@ import java.io.PrintStream;
 import jline.console.ConsoleReader;
 
 import org.geogit.api.DefaultPlatform;
+import org.geotools.util.DefaultProgressListener;
+import org.opengis.util.ProgressListener;
 
 import py4j.GatewayServer;
 
@@ -34,35 +36,11 @@ public class GeogitPy4JEntryPoint {
 
         StringBuffer sb = new StringBuffer();
 
-        StringBuffer progressSubstring = new StringBuffer();
-
-        private GeoGitPy4JProgressListener listener;
-
-        public ToStringOutputStream() {
-            this.listener = new SilentProgressListener();
-        }
-
         @Override
         public void write(int b) throws IOException {
             char c = (char) b;
             String s = String.valueOf(c);
-            if (c == '\n' || c == '%') {
-                try {
-                    int progress = Integer.parseInt(progressSubstring.toString().replace("%", "")
-                            .trim());
-                    listener.setProgress(progress);
-                } catch (NumberFormatException e) {
-                    sb.append(s);
-                }
-                progressSubstring = new StringBuffer();
-            } else {
-                progressSubstring.append(s);
-                sb.append(s);
-            }
-        }
-
-        public void setProgressListener(GeoGitPy4JProgressListener listener) {
-            this.listener = listener;
+            sb.append(s);
         }
 
         public void clear() {
@@ -78,8 +56,10 @@ public class GeogitPy4JEntryPoint {
 
     private ToStringOutputStream os;
 
-    public GeogitPy4JEntryPoint() {
+    private GeoGitPy4JProgressListener listener;
 
+    public GeogitPy4JEntryPoint() {
+        listener = new SilentProgressListener();
         os = new ToStringOutputStream();
         stream = new PrintStream(os);
         try {
@@ -94,12 +74,30 @@ public class GeogitPy4JEntryPoint {
      * Runs a command on a given repository
      * 
      * @param folder the repository folder
-     * @param args the args to run, including the command itself and additional paameters
+     * @param args the args to run, including the command itself and additional parameters
      * @return
      */
     public int runCommand(String folder, String[] args) {
         System.gc();
-        GeogitCLI cli = new GeogitCLI(consoleReader);
+        GeogitCLI cli = new GeogitCLI(consoleReader) {
+            public synchronized ProgressListener getProgressListener() {
+                if (this.progressListener == null) {
+
+                    this.progressListener = new DefaultProgressListener() {
+                        public void setDescription(String s) {
+                            listener.setProgressText(s);
+                        }
+
+                        @Override
+                        public synchronized void progress(float percent) {
+                            listener.setProgress(percent);
+
+                        }
+                    };
+                }
+                return this.progressListener;
+            }
+        };
         cli.tryConfigureLogging();
         DefaultPlatform platform = new DefaultPlatform();
         platform.setWorkingDir(new File(folder));
@@ -148,14 +146,14 @@ public class GeogitPy4JEntryPoint {
      * @param listener
      */
     public void setProgressListener(GeoGitPy4JProgressListener listener) {
-        os.setProgressListener(listener);
+        this.listener = listener;
     }
 
     /**
      * Removes the progress listener, if set
      */
     public void removeProgressListener() {
-        os.setProgressListener(new SilentProgressListener());
+        this.listener = new SilentProgressListener();
     }
 
     public static void main(String[] args) {
@@ -169,7 +167,12 @@ public class GeogitPy4JEntryPoint {
 class SilentProgressListener implements GeoGitPy4JProgressListener {
 
     @Override
-    public void setProgress(int i) {
+    public void setProgress(float i) {
+
+    }
+
+    @Override
+    public void setProgressText(String s) {
 
     }
 
