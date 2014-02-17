@@ -128,9 +128,12 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
     protected void put(final Entry entry, final String value, Config config) {
         new DbOp<Void>() {
             @Override
-            protected Void doRun(Connection cx) throws IOException, SQLException {
-                cx.setAutoCommit(false);
+            protected boolean isAutoCommit() {
+                return false;
+            }
 
+            @Override
+            protected Void doRun(Connection cx) throws IOException, SQLException {
                 doRemove(entry, cx);
 
                 String sql = "INSERT OR REPLACE INTO config (section,key,value) VALUES (?,?,?)";
