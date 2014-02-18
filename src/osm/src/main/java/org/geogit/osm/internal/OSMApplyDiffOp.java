@@ -127,11 +127,7 @@ public class OSMApplyDiffOp extends AbstractGeoGitOp<Optional<OSMReport>> {
         Function<Feature, String> parentTreePathResolver = new Function<Feature, String>() {
             @Override
             public String apply(Feature input) {
-                if (input instanceof FeatureToDelete) {
-                    return ((FeatureToDelete) input).getPath();
-                } else {
-                    return input.getType().getName().getLocalPart();
-                }
+                return input.getType().getName().getLocalPart();
             }
         };
 
@@ -245,20 +241,17 @@ public class OSMApplyDiffOp extends AbstractGeoGitOp<Optional<OSMReport>> {
 
         @Override
         public void process(ChangeContainer container) {
-            EntityContainer entityContainer = container.getEntityContainer();
-            Entity entity = entityContainer.getEntity();
-            if (container.getAction().equals(ChangeAction.Delete)) {
+            final EntityContainer entityContainer = container.getEntityContainer();
+            final Entity entity = entityContainer.getEntity();
+            final ChangeAction changeAction = container.getAction();
+            if (changeAction.equals(ChangeAction.Delete)) {
                 SimpleFeatureType ft = entity instanceof Node ? OSMUtils.nodeType() : OSMUtils
                         .wayType();
-                String path = ft.getName().getLocalPart();
                 String id = Long.toString(entity.getId());
-                Optional<org.geogit.api.Node> opt = workTree.findUnstaged(path + "/" + id);
-                if (opt.isPresent()) {
-                    target.put(new FeatureToDelete(path, id));
-                }
+                target.put(new FeatureToDelete(ft, id));
                 return;
             }
-            if (container.getAction().equals(ChangeAction.Modify)) {
+            if (changeAction.equals(ChangeAction.Modify)) {
                 // Check that the feature to modify exist. If so, we will just treat it as an
                 // addition, overwriting the previous feature
                 SimpleFeatureType ft = entity instanceof Node ? OSMUtils.nodeType() : OSMUtils
@@ -289,8 +282,8 @@ public class OSMApplyDiffOp extends AbstractGeoGitOp<Optional<OSMReport>> {
                 return;
             }
             if (geom != null) {
-                if (container.getAction().equals(ChangeAction.Create) && geom.within(bbox)
-                        || container.getAction().equals(ChangeAction.Modify)) {
+                if (changeAction.equals(ChangeAction.Create) && geom.within(bbox)
+                        || changeAction.equals(ChangeAction.Modify)) {
                     Feature feature = converter.toFeature(entity, geom);
                     target.put(feature);
                 }

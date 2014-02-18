@@ -85,10 +85,7 @@ class WorkingTreeInsertHelper {
         final String treePath = treePathResolver.apply(feature);
         RevTreeBuilder2 builder = treeBuilders.get(treePath);
         if (builder == null) {
-            FeatureType type = null;
-            if (!(feature instanceof FeatureToDelete)) {
-                type = feature.getType();
-            }
+            FeatureType type = feature.getType();
             builder = createBuilder(treePath, type);
             treeBuilders.put(treePath, builder);
         }

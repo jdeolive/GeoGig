@@ -122,7 +122,7 @@ public class WorkingTreeTest extends RepositoryTestCase {
                 .getObjectId());
 
         featureList.clear();
-        featureList.add(new FeatureToDelete(pointsName, idP1));
+        featureList.add(new FeatureToDelete(pointsType, idP1));
         featureList.add(points2);
         featureList.add(points3);
 
