@@ -80,22 +80,24 @@ public class GeogitPy4JEntryPoint {
     public int runCommand(String folder, String[] args) {
         System.gc();
         GeogitCLI cli = new GeogitCLI(consoleReader) {
+            @Override
             public synchronized ProgressListener getProgressListener() {
-                if (this.progressListener == null) {
+                if (super.progressListener == null) {
 
-                    this.progressListener = new DefaultProgressListener() {
+                    super.progressListener = new DefaultProgressListener() {
+                        @Override
                         public void setDescription(String s) {
-                            listener.setProgressText(s);
+                            GeogitPy4JEntryPoint.this.listener.setProgressText(s);
                         }
 
                         @Override
                         public synchronized void progress(float percent) {
-                            listener.setProgress(percent);
+                            GeogitPy4JEntryPoint.this.listener.setProgress(percent);
 
                         }
                     };
                 }
-                return this.progressListener;
+                return super.progressListener;
             }
         };
         cli.tryConfigureLogging();

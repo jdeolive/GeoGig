@@ -88,7 +88,7 @@ public class GeogitCLI {
 
     private ConsoleReader consoleReader;
 
-    private DefaultProgressListener progressListener;
+    protected ProgressListener progressListener;
 
     /**
      * Construct a GeogitCLI with the given console reader.
