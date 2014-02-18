@@ -12,11 +12,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.geogit.api.GeoGIT;
+import org.geogit.cli.AbstractCommand;
+import org.geogit.cli.CLICommand;
+import org.geogit.cli.GeogitCLI;
 import org.geogit.osm.internal.CreateOSMChangesetOp;
 import org.openstreetmap.osmosis.core.container.v0_6.ChangeContainer;
 import org.openstreetmap.osmosis.xml.v0_6.XmlChangeWriter;
-
-import py4j.commands.AbstractCommand;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;

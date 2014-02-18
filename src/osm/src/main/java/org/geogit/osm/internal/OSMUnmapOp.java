@@ -13,10 +13,13 @@ import java.util.Set;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.NodeRef;
+import org.geogit.api.ObjectId;
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevTree;
+import org.geogit.api.plumbing.DiffTree;
 import org.geogit.api.plumbing.LsTreeOp;
+import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.osm.internal.MappingRule.DefaultField;
@@ -28,7 +31,6 @@ import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
-import org.opengis.filter.identity.ObjectId;
 import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
 
 import com.beust.jcommander.internal.Maps;
