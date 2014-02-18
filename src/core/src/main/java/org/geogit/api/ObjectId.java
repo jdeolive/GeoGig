@@ -10,7 +10,6 @@ import java.util.Arrays;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
-import com.google.common.hash.HashCodes;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 
@@ -110,13 +109,21 @@ public final class ObjectId implements Comparable<ObjectId> {
                 | ((hashCode[3] & 0xFF) << 24);
     }
 
+    private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
     /**
      * @return a human friendly representation of this SHA1
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
-        return HashCodes.fromBytes(hashCode).toString();
+        StringBuilder sb = new StringBuilder(2 * NUM_BYTES);
+        byte b;
+        for (int i = 0; i < NUM_BYTES; i++) {
+            b = hashCode[i];
+            sb.append(HEX_DIGITS[(b >> 4) & 0xf]).append(HEX_DIGITS[b & 0xf]);
+        }
+        return sb.toString();
     }
 
     /**
