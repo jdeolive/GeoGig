@@ -200,6 +200,7 @@ class GeogitFeatureStore extends ContentFeatureStore {
             final int flags) throws IOException {
 
         Preconditions.checkArgument(flags != 0, "no write flags set");
+        Preconditions.checkState(getDataStore().isAllowTransactions(), "Transactions not supported; head is not a local branch");
 
         FeatureReader<SimpleFeatureType, SimpleFeature> features;
         if ((flags | WRITER_UPDATE) == WRITER_UPDATE) {
@@ -228,6 +229,7 @@ class GeogitFeatureStore extends ContentFeatureStore {
         if (Transaction.AUTO_COMMIT.equals(getTransaction())) {
             throw new UnsupportedOperationException("GeoGIT does not support AUTO_COMMIT");
         }
+        Preconditions.checkState(getDataStore().isAllowTransactions(), "Transactions not supported; head is not a local branch");
         final WorkingTree workingTree = delegate.getWorkingTree();
         final String path = delegate.getTypeTreePath();
 
@@ -320,6 +322,7 @@ class GeogitFeatureStore extends ContentFeatureStore {
 
     @Override
     public void modifyFeatures(Name[] names, Object[] values, Filter filter) throws IOException {
+        Preconditions.checkState(getDataStore().isAllowTransactions(), "Transactions not supported; head is not a local branch");
 
         final WorkingTree workingTree = delegate.getWorkingTree();
         final String path = delegate.getTypeTreePath();
@@ -371,6 +374,7 @@ class GeogitFeatureStore extends ContentFeatureStore {
 
     @Override
     public void removeFeatures(Filter filter) throws IOException {
+        Preconditions.checkState(getDataStore().isAllowTransactions(), "Transactions not supported; head is not a local branch");
         final WorkingTree workingTree = delegate.getWorkingTree();
         final String typeTreePath = delegate.getTypeTreePath();
         filter = (Filter) filter.accept(new SimplifyingFilterVisitor(), null);

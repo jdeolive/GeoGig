@@ -160,7 +160,6 @@ public abstract class RepositoryTestCase extends Assert {
 
         geogit = new GeoGIT(injector, envHome);
         repo = geogit.getOrCreateRepository();
-        repo = geogit.getOrCreateRepository();
         repo.command(ConfigOp.class).setAction(ConfigAction.CONFIG_SET).setName("user.name")
                 .setValue("Gabriel Roldan").call();
         repo.command(ConfigOp.class).setAction(ConfigAction.CONFIG_SET).setName("user.email")
