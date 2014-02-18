@@ -170,7 +170,7 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
                 featureType = createForceFeatureType(featureType, path);
             }
 
-            featureType = decorateGeomName(featureType);
+            featureType = overrideGeometryName(featureType);
 
             featureSource = new ForceTypeAndFidFeatureSource<FeatureType, Feature>(featureSource,
                     featureType, fidPrefix);
@@ -209,7 +209,7 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
         return workTree.getTree();
     }
 
-    private SimpleFeatureType decorateGeomName(SimpleFeatureType featureType) {
+    private SimpleFeatureType overrideGeometryName(SimpleFeatureType featureType) {
 
         if (geomName == null) {
             return featureType;
@@ -564,11 +564,12 @@ public class ImportOp extends AbstractGeoGitOp<RevTree> {
     }
 
     /**
-     * Sets the name to use for the geometry descriptor. If not provided, a default one will be used
+     * Sets the name to use for the geometry descriptor. If not provided, the geometry name from
+     * the source schema will be used.
      * 
      * @param geomName
      */
-    public ImportOp setGeomName(String geomName) {
+    public ImportOp setGeometryNameOverride(String geomName) {
         this.geomName = geomName;
         return this;
 

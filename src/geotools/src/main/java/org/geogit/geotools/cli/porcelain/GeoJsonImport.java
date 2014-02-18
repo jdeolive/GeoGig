@@ -118,7 +118,7 @@ public class GeoJsonImport extends AbstractGeoJsonCommand implements CLICommand 
                 ProgressListener progressListener = cli.getProgressListener();
                 cli.getGeogit().command(ImportOp.class).setAll(true).setTable(null).setAlter(alter)
                         .setOverwrite(!add).setDestinationPath(destTable).setDataStore(dataStore)
-                        .setFidAttribute(fidAttribute).setGeomName(geomName)
+                        .setFidAttribute(fidAttribute).setGeometryNameOverride(geomName)
                         .setProgressListener(progressListener).call();
 
                 cli.getConsole().println(geoJSON + " imported successfully.");

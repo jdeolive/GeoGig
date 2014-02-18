@@ -300,11 +300,11 @@ public class ImportOpTest extends RepositoryTestCase {
     }
 
     @Test
-    public void testImportWithDecoratedGeomName() throws Exception {
+    public void testImportWithOverriddenGeomName() throws Exception {
         ImportOp importOp = geogit.command(ImportOp.class);
         importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
         importOp.setTable("table1");
-        importOp.setGeomName("my_geom_name");
+        importOp.setGeometryNameOverride("my_geom_name");
         importOp.call();
         Iterator<NodeRef> features = geogit.command(LsTreeOp.class)
                 .setStrategy(Strategy.DEPTHFIRST_ONLY_FEATURES).call();
@@ -319,11 +319,11 @@ public class ImportOpTest extends RepositoryTestCase {
     }
 
     @Test
-    public void testImportWithDecoratedGeomNameAlredyInUse() throws Exception {
+    public void testImportWithOverriddenGeomNameAlredyInUse() throws Exception {
         ImportOp importOp = geogit.command(ImportOp.class);
         importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
         importOp.setTable("table1");
-        importOp.setGeomName("label");
+        importOp.setGeometryNameOverride("label");
         try {
             importOp.call();
             fail("Should throw exception complaining of parameter name already in use");
