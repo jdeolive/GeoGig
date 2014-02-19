@@ -68,7 +68,7 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
 
                 Map<String,String> all = Maps.newLinkedHashMap();
                 while(rs.next()) {
-                    String entry = String.format("%.%", rs.getString(1), rs.getString(2));
+                    String entry = String.format("%s.%s", rs.getString(1), rs.getString(2));
                     all.put(entry, rs.getString(3));
                 }
 
@@ -128,9 +128,12 @@ public class XerialConfigDatabase extends SQLiteConfigDatabase {
     protected void put(final Entry entry, final String value, Config config) {
         new DbOp<Void>() {
             @Override
-            protected Void doRun(Connection cx) throws IOException, SQLException {
-                cx.setAutoCommit(false);
+            protected boolean isAutoCommit() {
+                return false;
+            }
 
+            @Override
+            protected Void doRun(Connection cx) throws IOException, SQLException {
                 doRemove(entry, cx);
 
                 String sql = "INSERT OR REPLACE INTO config (section,key,value) VALUES (?,?,?)";
