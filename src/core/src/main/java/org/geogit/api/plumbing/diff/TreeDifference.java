@@ -11,6 +11,7 @@ import static com.google.common.collect.Maps.newTreeMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 
@@ -166,7 +167,8 @@ public class TreeDifference {
         SortedMap<String, ValueDifference<MutableTree>> entriesDiffering;
         entriesDiffering = difference.entriesDiffering();
 
-        SortedMap<NodeRef, NodeRef> matches = Maps.newTreeMap(MutableTree.DEEPEST_FIRST_COMPARATOR);
+        SortedMap<NodeRef, NodeRef> matches = 
+            new java.util.TreeMap<NodeRef, NodeRef>(MutableTree.DEEPEST_FIRST_COMPARATOR); 
 
         for (Map.Entry<String, ValueDifference<MutableTree>> e : entriesDiffering.entrySet()) {
             String nodePath = e.getKey();
