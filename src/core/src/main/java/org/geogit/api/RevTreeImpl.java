@@ -8,6 +8,7 @@ package org.geogit.api;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.geogit.storage.NodeStorageOrder;
 import org.geogit.storage.ObjectDatabase;
@@ -17,6 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 
 /**
  *
@@ -199,8 +201,16 @@ public abstract class RevTreeImpl extends AbstractRevObject implements RevTree {
     @Override
     public Iterator<Node> children() {
         Preconditions.checkState(!buckets().isPresent());
-        final ImmutableList<Node> empty = ImmutableList.of();
-        return Iterators.concat(trees().or(empty).iterator(), features().or(empty).iterator());
+        ImmutableList<Node> trees = trees().or(ImmutableList.<Node> of());
+        ImmutableList<Node> features = features().or(ImmutableList.<Node> of());
+        if (trees.isEmpty()) {
+            return features.iterator();
+        }
+        if (features.isEmpty()) {
+            return trees.iterator();
+        }
+        return Iterators.mergeSorted(ImmutableList.of(trees.iterator(), features.iterator()),
+                ordering);
     }
 
     @Override
