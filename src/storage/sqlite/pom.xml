@@ -21,17 +21,6 @@
       <version>${project.version}</version>
     </dependency>
 
-    <dependency>
-      <!-- Google Common Libraries. Featuring com.google.collect collection classes -->
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.inject</groupId>
-      <artifactId>guice</artifactId>
-    </dependency>
-    
     <!-- Test scope dependencies -->
     <dependency>
       <groupId>org.geogit</groupId>
