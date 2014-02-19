@@ -182,9 +182,12 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
         Preconditions.checkState(isOpen(), "No open database connection");
         new DbOp<Void>() {
             @Override
-            protected Void doRun(Connection cx) throws SQLException, IOException {
-                cx.setAutoCommit(false);
+            protected boolean isAutoCommit() {
+                return false;
+            }
 
+            @Override
+            protected Void doRun(Connection cx) throws SQLException, IOException {
                 // use INSERT OR IGNORE to deal with duplicates cleanly
                 String sql = format("INSERT OR IGNORE INTO %s (object,id) VALUES (?,?)", OBJECTS);
                 PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
@@ -227,9 +230,12 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
         Preconditions.checkState(isOpen(), "No open database connection");
         return new DbOp<Long>() {
             @Override
-            protected Long doRun(Connection cx) throws SQLException, IOException {
-                cx.setAutoCommit(false);
+            protected boolean isAutoCommit() {
+                return false;
+            }
 
+            @Override
+            protected Long doRun(Connection cx) throws SQLException, IOException {
                 String sql = format("DELETE FROM %s WHERE id = ?", OBJECTS);
                 PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
 

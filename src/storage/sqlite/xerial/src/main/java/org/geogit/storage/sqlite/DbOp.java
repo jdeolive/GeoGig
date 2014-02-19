@@ -67,7 +67,18 @@ public abstract class DbOp<T> {
     public final T run(Connection cx) {
         try {
             try {
-                return doRun(cx);
+                boolean auto = isAutoCommit();
+                if (!auto) {
+                    cx.setAutoCommit(false);
+                }
+                try {
+                    return doRun(cx);
+                }
+                finally {
+                    if (!auto) {
+                        cx.setAutoCommit(true);
+                    }
+                }
             } catch (Exception e) {
                 throw Throwables.propagate(e);
             }
@@ -121,4 +132,14 @@ public abstract class DbOp<T> {
      *
      */
     protected abstract T doRun(Connection cx) throws IOException, SQLException;
+
+    /**
+     * Subclass hook to determine if the operation runs within a transaction. 
+     * <p>
+     * It is the responsibility of the subclass to either commit or rollback the transaction.
+     * </p>
+     */
+    protected boolean isAutoCommit() {
+        return true;
+    }
 }
