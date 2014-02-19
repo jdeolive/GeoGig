@@ -12,6 +12,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * A {@link RevObject} identifier backed by a hash function (SHA1 for instance)
@@ -173,6 +174,9 @@ public final class ObjectId implements Comparable<ObjectId> {
     }
 
     /**
+     * Implementation of {@link Comparable#compareTo(Object)} that compares the hash code bytes
+     * treating them as unsigned bytes.
+     * 
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     public int compareTo(final ObjectId o) {
@@ -182,14 +186,7 @@ public final class ObjectId implements Comparable<ObjectId> {
     }
 
     public static int compare(byte[] left, byte[] right) {
-        int c;
-        for (int i = 0; i < left.length; i++) {
-            c = left[i] - right[i];
-            if (c != 0) {
-                return c;
-            }
-        }
-        return 0;
+        return UnsignedBytes.lexicographicalComparator().compare(left, right);
     }
 
     /**
