@@ -108,7 +108,7 @@ public class GeogitModule extends AbstractModule {
             }
         };
 
-        bindInterceptor(canRunDuringCommitMatcher, callMatcher, new ConflictInterceptor());
+        //bindInterceptor(canRunDuringCommitMatcher, callMatcher, new ConflictInterceptor());
     }
 
     private void bindCommitGraphInterceptor() {
@@ -123,7 +123,7 @@ public class GeogitModule extends AbstractModule {
         Matcher<Method> methodMatcher = new MethodMatcher(putRevObject)
                 .or(new MethodMatcher(putAll));
 
-        bindInterceptor(subclassesOf(ObjectDatabase.class), methodMatcher,
-                new ObjectDatabasePutInterceptor(getProvider(GraphDatabase.class)));
+        //bindInterceptor(subclassesOf(ObjectDatabase.class), methodMatcher,
+        //        new ObjectDatabasePutInterceptor(getProvider(GraphDatabase.class)));
     }
 }

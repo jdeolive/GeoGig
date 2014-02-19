@@ -84,14 +84,14 @@ public class CachingModule extends AbstractModule {
             final Provider<? extends CacheFactory> cacheProvider, final Matcher<Method> getMatcher,
             final Matcher<Method> deleteMatcher, final Matcher<Method> deleteAllMatcher) {
 
-        bindInterceptor(objectDatabaseMatcher, getMatcher, new ObjectDatabaseGetCacheInterceptor(
-                cacheProvider));
+        //bindInterceptor(objectDatabaseMatcher, getMatcher, new ObjectDatabaseGetCacheInterceptor(
+        //        cacheProvider));
 
-        bindInterceptor(objectDatabaseMatcher, deleteMatcher,
-                new ObjectDatabaseDeleteCacheInterceptor(cacheProvider));
+        //bindInterceptor(objectDatabaseMatcher, deleteMatcher,
+        //        new ObjectDatabaseDeleteCacheInterceptor(cacheProvider));
 
-        bindInterceptor(objectDatabaseMatcher, deleteAllMatcher,
-                new ObjectDatabaseDeleteAllCacheInterceptor(cacheProvider));
+        //bindInterceptor(objectDatabaseMatcher, deleteAllMatcher,
+        //        new ObjectDatabaseDeleteAllCacheInterceptor(cacheProvider));
     }
 
 }
