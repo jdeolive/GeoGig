@@ -14,6 +14,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import javax.sql.DataSource;
+
 import org.geogit.api.Platform;
 import org.geogit.storage.ConfigDatabase;
 import org.slf4j.Logger;
@@ -29,7 +31,7 @@ import static org.geogit.storage.sqlite.Xerial.log;
  *
  * @author Justin Deoliveira, Boundless
  */
-public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
+public class XerialGraphDatabase extends SQLiteGraphDatabase<DataSource> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialGraphDatabase.class);
 
@@ -49,25 +51,16 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
     }
 
     @Override
-    protected Connection connect() {
-        try {
-            return dataSource.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("unable to open connection", e);
-        }
+    protected DataSource connect(File geogitDir) {
+        return Xerial.newDataSource(new File(geogitDir, "graph.db"));
     }
 
     @Override
-    protected void close(Connection cx) {
-        try {
-            cx.close();
-        } catch (SQLException e) {
-            LOG.debug("error closing connection", e);
-        }
+    protected void close(DataSource ds) {
     }
 
     @Override
-    public void init(Connection cx) {
+    public void init(DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -101,13 +94,13 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
 
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
         
     }
 
     @Override
-    public boolean put(final String node, Connection cx) {
-        if (has(node, cx)) {
+    public boolean put(final String node, DataSource ds) {
+        if (has(node, ds)) {
             return false;
         }
 
@@ -122,11 +115,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ps.executeUpdate();
                 return true;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public boolean has(final String node, Connection cx) {
+    public boolean has(final String node, DataSource ds) {
         return new DbOp<Boolean>() {
             @Override
             protected Boolean doRun(Connection cx) throws IOException, SQLException {
@@ -140,11 +133,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
 
                 return rs.getInt(1) > 0;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public void relate(final String src, final String dst, Connection cx) {
+    public void relate(final String src, final String dst, DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -157,11 +150,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ps.executeUpdate();
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public void map(final String from, final String to, Connection cx) {
+    public void map(final String from, final String to, DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -174,11 +167,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ps.executeUpdate();
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public String mapping(final String node, Connection cx) {
+    public String mapping(final String node, DataSource ds) {
         return new DbOp<String>() {
             @Override
             protected String doRun(Connection cx) throws IOException, SQLException {
@@ -190,11 +183,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ResultSet rs = open(ps.executeQuery());
                 return rs.next() ? rs.getString(1) : null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public void property(final String node, final String key, final String val, Connection cx) {
+    public void property(final String node, final String key, final String val, DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -208,11 +201,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                 ps.executeUpdate();
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public String property(final String node, final String key, Connection cx) {
+    public String property(final String node, final String key, DataSource ds) {
         return new DbOp<String>() {
             @Override
             protected String doRun(Connection cx) throws IOException, SQLException {
@@ -230,11 +223,12 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
                     return null;
                 }
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public Iterable<String> outgoing(final String node, Connection cx) {
+    public Iterable<String> outgoing(final String node, DataSource ds) {
+        Connection cx = Xerial.newConnection(ds);
         ResultSet rs = new DbOp<ResultSet>() {
             @Override
             protected ResultSet doRun(Connection cx) throws IOException, SQLException {
@@ -246,12 +240,13 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
             }
         }.run(cx);
 
-        return new StringResultSetIterable(rs);
+        return new StringResultSetIterable(rs, cx);
 
     }
 
     @Override
-    public Iterable<String> incoming(final String node, Connection cx) {
+    public Iterable<String> incoming(final String node, DataSource ds) {
+        Connection cx = Xerial.newConnection(ds);
         ResultSet rs = new DbOp<ResultSet>() {
             @Override
             protected ResultSet doRun(Connection cx) throws IOException, SQLException {
@@ -263,11 +258,11 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
             }
         }.run(cx);
 
-        return new StringResultSetIterable(rs);
+        return new StringResultSetIterable(rs, cx);
     }
 
     @Override
-    public void clear(Connection cx) {
+    public void clear(DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -287,7 +282,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<Connection> {
 
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
-
 }

@@ -4,6 +4,7 @@
  */
 package org.geogit.storage.sqlite;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.Iterator;
 
@@ -18,9 +19,11 @@ import com.google.common.collect.AbstractIterator;
 public class StringResultSetIterable implements Iterable<String> {
 
     ResultSet rs;
+    Connection cx;
 
-    StringResultSetIterable(ResultSet rs) {
+    StringResultSetIterable(ResultSet rs, Connection cx) {
         this.rs = rs;
+        this.cx = cx;
     }
 
     @Override
@@ -31,6 +34,7 @@ public class StringResultSetIterable implements Iterable<String> {
                 try {
                     if (!rs.next()) {
                         rs.close();
+                        cx.close();
                         return endOfData();
                     }
 

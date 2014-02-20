@@ -10,6 +10,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,14 +19,16 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.geogit.api.ObjectId;
 import org.geogit.api.Platform;
 import org.geogit.api.RevObject;
+import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ConfigDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sqlite.SQLiteDataSource;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
@@ -38,48 +42,39 @@ import static org.geogit.storage.sqlite.Xerial.log;
  *
  * @author Justin Deoliveira, Boundless
  */
-public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
+public class XerialObjectDatabase extends SQLiteObjectDatabase<DataSource> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialObjectDatabase.class);
 
     static final String OBJECTS = "objects";
 
-    final SQLiteDataSource dataSource;
-
     final int partitionSize = 10 * 1000; // TODO make configurable
+
+    final String dbName;
 
     @Inject
     public XerialObjectDatabase(ConfigDatabase configdb, Platform platform) {
         this(configdb, platform, "objects");
     }
 
-    public XerialObjectDatabase(ConfigDatabase configdb, Platform platform, String name) {
+    public XerialObjectDatabase(ConfigDatabase configdb, Platform platform, String dbName) {
         super(configdb, platform);
-
-        File db = new File(new File(platform.pwd(), ".geogit"), name + ".db");
-        dataSource = Xerial.newDataSource(db);
+        this.dbName = dbName;
+//        File db = new File(new File(platform.pwd(), ".geogit"), name + ".db");
+//        dataSource = Xerial.newDataSource(db);
     }
 
     @Override
-    protected Connection connect() {
-        try {
-            return dataSource.getConnection();
-        } catch (SQLException e) {
-            throw new RuntimeException("unable to open connection", e);
-        }
+    protected DataSource connect(File geogitDir) {
+        return Xerial.newDataSource(new File(geogitDir, dbName + ".db"));
     }
 
     @Override
-    protected void close(Connection cx) {
-        try {
-            cx.close();
-        } catch (SQLException e) {
-            LOG.debug("error closing connection", e);
-        }
+    protected void close(DataSource ds) {
     }
 
     @Override
-    public void init(Connection cx) {
+    public void init(DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException {
@@ -88,11 +83,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
                 open(cx.createStatement()).execute(log(sql,LOG));
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public boolean has(final String id, Connection cx) {
+    public boolean has(final String id, DataSource ds) {
         return new DbOp<Boolean>() {
             @Override
             protected Boolean doRun(Connection cx) throws SQLException {
@@ -106,11 +101,12 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return rs.getInt(1) > 0;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public Iterable<String> search(final String partialId, Connection cx) {
+    public Iterable<String> search(final String partialId, DataSource ds) {
+        Connection cx = Xerial.newConnection(ds);
         final ResultSet rs = new DbOp<ResultSet>() {
             @Override
             protected ResultSet doRun(Connection cx) throws SQLException {
@@ -120,11 +116,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
             }
         }.run(cx);
 
-        return new StringResultSetIterable(rs);
+        return new StringResultSetIterable(rs, cx);
     }
 
     @Override
-    public InputStream get(final String id, Connection cx) {
+    public InputStream get(final String id, DataSource ds) {
         return new DbOp<InputStream>() {
             @Override
             protected InputStream doRun(Connection cx) throws SQLException {
@@ -141,11 +137,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
                 byte[] bytes = rs.getBytes(1);
                 return new ByteArrayInputStream(bytes);
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public void put(final String id, final InputStream obj, Connection cx) {
+    public void put(final String id, final InputStream obj, DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException, IOException {
@@ -158,11 +154,11 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    public boolean delete(final String id, Connection cx) {
+    public boolean delete(final String id, DataSource ds) {
         return new DbOp<Boolean>() {
             @Override
             protected Boolean doRun(Connection cx) throws SQLException {
@@ -173,7 +169,7 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<Connection> {
 
                 return ps.executeUpdate() > 0;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     /**

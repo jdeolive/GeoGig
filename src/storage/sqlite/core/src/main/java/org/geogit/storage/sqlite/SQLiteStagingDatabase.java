@@ -32,7 +32,7 @@ public abstract class SQLiteStagingDatabase<T> extends ForwardingStagingDatabase
     final ConfigDatabase configdb;
     final Platform platform;
 
-    T cx;
+    private T cx;
 
     public SQLiteStagingDatabase(ObjectDatabase repoDb, SQLiteObjectDatabase<T> stageDb, 
         ConfigDatabase configdb, Platform platform) {

@@ -13,6 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.sql.DataSource;
+
 import org.geogit.api.Platform;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.ObjectDatabase;
@@ -26,7 +28,7 @@ import com.google.inject.Inject;
  *
  * @author Justin Deoliveira, Boundless
  */
-public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
+public class XerialStagingDatabase extends SQLiteStagingDatabase<DataSource> {
 
     final static Logger LOG = LoggerFactory.getLogger(XerialStagingDatabase.class);
 
@@ -38,7 +40,7 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
     }
 
     @Override
-    protected void init(Connection cx) {
+    protected void init(DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws SQLException {
@@ -50,11 +52,12 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
 
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    protected Iterable<String> get(final String namespace, final String pathFilter, Connection cx) {
+    protected Iterable<String> get(final String namespace, final String pathFilter, DataSource ds) {
+        Connection cx = Xerial.newConnection(ds);
         ResultSet rs = new DbOp<ResultSet>() {
             @Override
             protected ResultSet doRun(Connection cx) throws IOException, SQLException {
@@ -69,12 +72,12 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
             }
         }.run(cx);
 
-        return new StringResultSetIterable(rs);
+        return new StringResultSetIterable(rs, cx);
     }
 
     @Override
     protected void put(final String namespace, final String path, final String conflict, 
-        Connection cx) {
+        DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -90,11 +93,11 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
                 ps.executeUpdate();
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
     @Override
-    protected void remove(final String namespace, final String path, Connection cx) {
+    protected void remove(final String namespace, final String path, DataSource ds) {
         new DbOp<Void>() {
             @Override
             protected Void doRun(Connection cx) throws IOException, SQLException {
@@ -109,7 +112,7 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<Connection> {
                 ps.executeUpdate();
                 return null;
             }
-        }.run(cx);
+        }.run(ds);
     }
 
 }

@@ -11,8 +11,11 @@ import static org.geogit.storage.sqlite.SQLiteStorage.VERSION;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -25,6 +28,7 @@ import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevObject;
 import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
+import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.repository.RepositoryConnectionException;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ConfigDatabase;
@@ -62,7 +66,12 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     @Override
     public void open() {
         if (cx == null) {
-            cx = connect();
+            URL geogitDir = new ResolveGeogitDir(platform).call();
+            try {
+                cx = connect(new File(geogitDir.toURI()));
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("error resolving .geogit dir", e);
+            }
             init(cx);
         }
     }
@@ -259,7 +268,7 @@ public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
     /**
      * Opens a database connection, returning the object representing connection state.
      */
-    protected abstract C connect();
+    protected abstract C connect(File geogitDir);
 
     /**
      * Closes a database connection.

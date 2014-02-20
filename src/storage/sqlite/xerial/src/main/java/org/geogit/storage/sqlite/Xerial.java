@@ -5,6 +5,10 @@
 package org.geogit.storage.sqlite;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
 
 import org.geogit.di.GeogitModule;
 import org.slf4j.Logger;
@@ -58,5 +62,13 @@ public class Xerial {
         SQLiteDataSource dataSource = new SQLiteDataSource();
         dataSource.setUrl("jdbc:sqlite:" + db.getAbsolutePath());
         return dataSource;
+    }
+
+    public static Connection newConnection(DataSource ds) {
+        try {
+            return ds.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to obatain connection", e);
+        }
     }
 }
