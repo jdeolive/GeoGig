@@ -104,7 +104,7 @@ public class GenericAttributeDiffImpl implements AttributeDiff {
     @Override
     public boolean canBeAppliedOn(Optional<?> obj) {
         if (obj == null) {
-            return oldValue == null;
+            obj = Optional.absent();
         }
         return obj.equals(oldValue) || obj.equals(newValue);
     }
