@@ -5,7 +5,7 @@
 package org.geogit.storage.sqlite;
 
 import static java.lang.String.format;
-import static org.geogit.storage.sqlite.Xerial.log;
+import static org.geogit.storage.sqlite.SQLiteStorage.log;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -41,8 +41,6 @@ import com.google.inject.Inject;
 public class XerialObjectDatabase extends SQLiteObjectDatabase<DataSource> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialObjectDatabase.class);
-
-    static final String OBJECTS = "objects";
 
     final int partitionSize = 10 * 1000; // TODO make configurable
 

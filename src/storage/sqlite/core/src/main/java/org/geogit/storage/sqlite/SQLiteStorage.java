@@ -10,6 +10,7 @@ import java.net.URL;
 
 import org.geogit.api.Platform;
 import org.geogit.api.plumbing.ResolveGeogitDir;
+import org.slf4j.Logger;
 
 import com.google.common.base.Optional;
 
@@ -28,6 +29,30 @@ public class SQLiteStorage {
      * Implementation version.
      */
     public static final String VERSION = "0.1";
+
+    /**
+     * Logs a (prepared) sql statement.
+     * 
+     * @param sql Base sql to log.
+     * @param log The logger object.
+     * @param args Optional arguments to the statement.
+     * 
+     * @return The original statement.
+     */
+    public static String log(String sql, Logger log, Object... args) {
+        if (log.isDebugEnabled()) {
+            StringBuilder sb = new StringBuilder(sql);
+            if (args.length > 0) {
+                sb.append(";");
+                for (int i = 0; i < args.length; i++) {
+                    sb.append(i).append("=").append(args[i]).append(", ");
+                }
+                sb.setLength(sb.length() - 2);
+            }
+            log.debug(sb.toString());
+        }
+        return sql;
+    }
 
     /**
      * Returns the .geogit directory for the platform object.

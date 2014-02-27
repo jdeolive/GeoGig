@@ -5,7 +5,7 @@
 package org.geogit.storage.sqlite;
 
 import static java.lang.String.format;
-import static org.geogit.storage.sqlite.Xerial.log;
+import static org.geogit.storage.sqlite.SQLiteStorage.log;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,14 +32,6 @@ import com.google.inject.Inject;
 public class XerialGraphDatabase extends SQLiteGraphDatabase<DataSource> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialGraphDatabase.class);
-
-    static final String NODES = "nodes";
-
-    static final String EDGES = "edges";
-
-    static final String PROPS = "props";
-
-    static final String MAPPINGS = "mappings";
 
     @Inject
     public XerialGraphDatabase(ConfigDatabase configdb, Platform platform) {
