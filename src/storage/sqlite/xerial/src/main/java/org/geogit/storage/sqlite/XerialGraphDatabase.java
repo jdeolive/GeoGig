@@ -5,7 +5,7 @@
 package org.geogit.storage.sqlite;
 
 import static java.lang.String.format;
-import static org.geogit.storage.sqlite.Xerial.log;
+import static org.geogit.storage.sqlite.SQLiteStorage.log;
 
 import java.io.File;
 import java.io.IOException;
