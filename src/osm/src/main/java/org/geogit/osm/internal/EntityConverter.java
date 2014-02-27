@@ -9,7 +9,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.opengis.feature.FeatureFactory;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.openstreetmap.osmosis.core.domain.v0_6.CommonEntityData;
@@ -26,10 +28,14 @@ import com.vividsolutions.jts.geom.Point;
 
 public class EntityConverter {
 
+    /** Cached instance to avoid multiple factory lookups */
+    private static final FeatureFactory FEATURE_FACTORY = CommonFactoryFinder
+            .getFeatureFactory(null);
+
     public SimpleFeature toFeature(Entity entity, Geometry geom) {
 
         SimpleFeatureType ft = entity instanceof Node ? OSMUtils.nodeType() : OSMUtils.wayType();
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(ft);
+        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(ft, FEATURE_FACTORY);
 
         builder.set("visible", Boolean.TRUE); // TODO: Check this!
         builder.set("version", Integer.valueOf(entity.getVersion()));
@@ -67,12 +73,21 @@ public class EntityConverter {
 
     }
 
-    public Entity toEntity(SimpleFeature feature) {
+    /**
+     * Converts a Feature to a OSM Entity
+     * @param feature the feature to convert
+     * @param replaceId. The changesetId to use in case the feature has a negative one indicating a temporary value
+     * @return
+     */
+    public Entity toEntity(SimpleFeature feature, Long changesetId) {
         Entity entity;
         SimpleFeatureType type = feature.getFeatureType();
         long id = Long.parseLong(feature.getID());
         int version = ((Integer) feature.getAttribute("version")).intValue();
         Long changeset = (Long) feature.getAttribute("changeset");
+        if (changesetId != null && changeset < 0){
+        	changeset = changesetId;
+        }
         Long milis = (Long) feature.getAttribute("timestamp");
         Date timestamp = new Date(milis);
         String user = (String) feature.getAttribute("user");

@@ -6,6 +6,7 @@ package org.geogit.api;
 
 import java.util.Iterator;
 
+import org.geogit.storage.NodeStorageOrder;
 import org.geogit.storage.ObjectDatabase;
 
 import com.google.common.base.Optional;
@@ -124,7 +125,8 @@ public interface RevTree extends RevObject {
     /**
      * Precondition: {@code !buckets().isPresent()}
      * 
-     * @return an iterator over the trees and feature children collections, in that order
+     * @return an iterator over the trees and feature children collections, in the prescribed node
+     *         storage {@link NodeStorageOrder order}
      */
     public Iterator<Node> children();
 }

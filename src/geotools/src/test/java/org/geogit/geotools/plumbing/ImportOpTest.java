@@ -26,8 +26,6 @@ import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.porcelain.AddOp;
 import org.geogit.geotools.cli.porcelain.TestHelper;
-import org.geogit.geotools.plumbing.GeoToolsOpException;
-import org.geogit.geotools.plumbing.ImportOp;
 import org.geogit.repository.WorkingTree;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -38,7 +36,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -300,6 +297,52 @@ public class ImportOpTest extends RepositoryTestCase {
         assertTrue(featureType.isPresent());
         assertEquals("table1", featureType.get().getName().getLocalPart());
         assertEquals("name", featureType.get().sortedDescriptors().get(1).getName().getLocalPart());
+    }
+
+    @Test
+    public void testImportWithOverriddenGeomName() throws Exception {
+        ImportOp importOp = geogit.command(ImportOp.class);
+        importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
+        importOp.setTable("table1");
+        importOp.setGeometryNameOverride("my_geom_name");
+        importOp.call();
+        Iterator<NodeRef> features = geogit.command(LsTreeOp.class)
+                .setStrategy(Strategy.DEPTHFIRST_ONLY_FEATURES).call();
+        ArrayList<NodeRef> list = Lists.newArrayList(features);
+        assertEquals(2, list.size());
+        Optional<RevFeatureType> featureType = geogit.command(RevObjectParse.class)
+                .setObjectId(list.get(0).getMetadataId()).call(RevFeatureType.class);
+        assertTrue(featureType.isPresent());
+        assertEquals("table1", featureType.get().getName().getLocalPart());
+        assertEquals("my_geom_name", featureType.get().sortedDescriptors().get(0).getName()
+                .getLocalPart());
+    }
+
+    @Test
+    public void testImportWithOverriddenGeomNameAlredyInUse() throws Exception {
+        ImportOp importOp = geogit.command(ImportOp.class);
+        importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
+        importOp.setTable("table1");
+        importOp.setGeometryNameOverride("label");
+        try {
+            importOp.call();
+            fail("Should throw exception complaining of parameter name already in use");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().startsWith("The provided geom name is already in use"));
+        }
+    }
+
+    @Test
+    public void testImportWithFid() throws Exception {
+        ImportOp importOp = geogit.command(ImportOp.class);
+        importOp.setDataStore(TestHelper.createTestFactory().createDataStore(null));
+        importOp.setTable("table3");
+        importOp.setDestinationPath("table3");
+        importOp.setFidAttribute("number");
+        importOp.call();
+        Optional<RevFeature> feature = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:table3/1000").call(RevFeature.class);
+        assertTrue(feature.isPresent());
     }
 
     @Test

@@ -9,7 +9,7 @@ import java.util.Map;
 import org.geogit.api.Platform;
 import org.geogit.repository.RepositoryConnectionException;
 import org.geogit.storage.ConfigDatabase;
-import org.geogit.storage.TransactionalBlueprintsGraphDatabase;
+import org.geogit.storage.blueprints.TransactionalBlueprintsGraphDatabase;
 
 import com.google.inject.Inject;
 import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;

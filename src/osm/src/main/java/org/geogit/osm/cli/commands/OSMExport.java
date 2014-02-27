@@ -174,7 +174,7 @@ public class OSMExport extends AbstractCommand implements CLICommand {
                     featureBuilder.set(descriptor.getName(), value.orNull());
                 }
                 SimpleFeature feature = featureBuilder.buildFeature(ref.name());
-                Entity entity = converter.toEntity(feature);
+                Entity entity = converter.toEntity(feature, null);
                 EntityContainer container;
                 if (entity instanceof Node) {
                     container = new NodeContainer((Node) entity);

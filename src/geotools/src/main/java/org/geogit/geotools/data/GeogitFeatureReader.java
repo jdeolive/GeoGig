@@ -154,8 +154,8 @@ class GeogitFeatureReader<T extends FeatureType, F extends Feature> implements F
         this.offset = offset;
         this.maxFeatures = maxFeatures;
 
-        final String branchRef = headRef == null ? Ref.WORK_HEAD : headRef;
-        final String typeTreeRefSpec = branchRef + ":" + typeTreePath;
+        final String effectiveHead = headRef == null ? Ref.WORK_HEAD : headRef;
+        final String typeTreeRefSpec = effectiveHead + ":" + typeTreePath;
         final Optional<RevTree> parentTree = commandLocator.command(RevObjectParse.class)
                 .setRefSpec(typeTreeRefSpec).call(RevTree.class);
 

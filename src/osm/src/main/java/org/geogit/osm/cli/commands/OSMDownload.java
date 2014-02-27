@@ -15,7 +15,7 @@ import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
 import org.geogit.osm.internal.OSMDownloadOp;
-import org.geogit.osm.internal.OSMDownloadReport;
+import org.geogit.osm.internal.OSMReport;
 import org.geogit.osm.internal.OSMUpdateOp;
 import org.geogit.osm.internal.OSMUtils;
 
@@ -89,16 +89,16 @@ public class OSMDownload extends AbstractCommand implements CLICommand {
         osmAPIUrl = resolveAPIURL();
 
         if (update) {
-            Optional<OSMDownloadReport> report = cli.getGeogit().command(OSMUpdateOp.class)
+            Optional<OSMReport> report = cli.getGeogit().command(OSMUpdateOp.class)
                     .setAPIUrl(osmAPIUrl).setRebase(rebase).setMessage(message)
                     .setProgressListener(cli.getProgressListener()).call();
         } else {
-            Optional<OSMDownloadReport> report = cli.getGeogit().command(OSMDownloadOp.class)
-                    .setBbox(bbox).setFilterFile(filterFile).setKeepFiles(keepFiles)
-                    .setMessage(message).setMappingFile(mappingFile).setOsmAPIUrl(osmAPIUrl)
-                    .setSaveFile(saveFile).setProgressListener(cli.getProgressListener()).call();
+            Optional<OSMReport> report = cli.getGeogit().command(OSMDownloadOp.class).setBbox(bbox)
+                    .setFilterFile(filterFile).setKeepFiles(keepFiles).setMessage(message)
+                    .setMappingFile(mappingFile).setOsmAPIUrl(osmAPIUrl).setSaveFile(saveFile)
+                    .setProgressListener(cli.getProgressListener()).call();
             if (report.isPresent()) {
-                OSMDownloadReport rep = report.get();
+                OSMReport rep = report.get();
                 String msg;
                 if (rep.getUnpprocessedCount() > 0) {
                     msg = String

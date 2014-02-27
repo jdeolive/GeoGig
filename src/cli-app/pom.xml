@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.geogit</groupId>
     <artifactId>geogit</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -58,6 +58,10 @@
             <program>
               <mainClass>org.geogit.cli.GeogitConsole</mainClass>
               <name>geogit-console</name>
+            </program>
+            <program>
+              <mainClass>org.geogit.cli.GeogitPy4JEntryPoint</mainClass>
+              <name>geogit-gateway</name>
             </program>
           </programs>
         </configuration>

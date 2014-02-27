@@ -10,7 +10,7 @@ import java.util.Map;
 
 import org.geogit.api.Platform;
 import org.geogit.storage.ConfigDatabase;
-import org.geogit.storage.fs.IniConfigDatabase;
+import org.geogit.storage.fs.IniFileConfigDatabase;
 
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
@@ -22,17 +22,15 @@ public class TestConfigDatabase implements ConfigDatabase {
 
     {
         final IniMongoProperties properties = new IniMongoProperties();
-        final String port = properties.get("mongo.port", String.class).or(
-                "27017");
-        final String host = properties.get("mongo.host", String.class).or(
-                "localhost");
-        overrides.put("mongo.port", port);
-        overrides.put("mongo.host", host);
+        final String uri = properties.get("mongodb.uri", String.class).or("mongodb://localhost:27017/");
+        final String database = properties.get("mongodb.database", String.class).or("geogit");
+        overrides.put("mongodb.uri", uri);
+        overrides.put("mongodb.database", database);
     }
 
     @Inject
     public TestConfigDatabase(Platform platform) {
-        this.delegate = new IniConfigDatabase(platform);
+        this.delegate = new IniFileConfigDatabase(platform);
     }
 
     public Optional<String> get(String key) {

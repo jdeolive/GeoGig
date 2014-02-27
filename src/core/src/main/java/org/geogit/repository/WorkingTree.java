@@ -24,6 +24,7 @@ import org.geogit.api.FeatureBuilder;
 import org.geogit.api.Node;
 import org.geogit.api.NodeRef;
 import org.geogit.api.ObjectId;
+import org.geogit.api.Platform;
 import org.geogit.api.Ref;
 import org.geogit.api.RevFeature;
 import org.geogit.api.RevFeatureBuilder;
@@ -63,6 +64,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -71,6 +73,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.UnmodifiableIterator;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
@@ -397,7 +400,6 @@ public class WorkingTree {
 
         Optional<NodeRef> typeTreeRef = commandLocator.command(FindTreeChild.class).setIndex(true)
                 .setParent(getTree()).setChildPath(parentTreePath).call();
-
         ObjectId metadataId;
         if (typeTreeRef.isPresent()) {
             treeRef = typeTreeRef.get();
@@ -457,7 +459,9 @@ public class WorkingTree {
             //TODO: fix this, expose query capabilities in VectorDataset
             boolean supportsPaging = false; /*source.getQueryCapabilities().isOffsetSupported();*/
             if (supportsPaging) {
-                nFetchThreads = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
+                Platform platform = commandLocator.getPlatform();
+                int availableProcessors = platform.availableProcessors();
+                nFetchThreads = Math.max(2, availableProcessors / 2);
             } else {
                 nFetchThreads = 1;
             }
@@ -536,6 +540,7 @@ public class WorkingTree {
             final @Nullable Long collectionSize, int nTasks, RevTreeBuilder2 builder) {
 
         int partitionSize = 0;
+        int lastTaskPartitionSize = 0;
         BulkOpListener bulkOpListener;
         if (collectionSize == null) {
             nTasks = 1;
@@ -544,6 +549,7 @@ public class WorkingTree {
         } else {
             final int total = collectionSize.intValue();
             partitionSize = total / nTasks;
+            lastTaskPartitionSize = partitionSize + (total % nTasks);
             bulkOpListener = new BulkOpListener() {
                 int inserted = 0;
 
@@ -559,7 +565,10 @@ public class WorkingTree {
         for (int i = 0; i < nTasks; i++) {
             int offset = i * partitionSize;
             int limit = partitionSize;
-
+            if (i == nTasks - 1) {
+                limit = lastTaskPartitionSize;// let the last task take any remaining
+                                              // feature
+            }
             results.add(executorService.submit(new BlobInsertTask(source, offset, limit,
                     bulkOpListener, builder)));
         }
@@ -686,7 +695,20 @@ public class WorkingTree {
         insertHelper = new WorkingTreeInsertHelper(indexDatabase, commandLocator, getTree(),
                 treePathResolver, treeBuildingService);
 
-        Iterator<RevObject> objects = Iterators.transform(features,
+        UnmodifiableIterator<? extends Feature> filtered = Iterators.filter(features,
+                new Predicate<Feature>() {
+                    @Override
+                    public boolean apply(Feature feature) {
+                        if (feature instanceof FeatureToDelete) {
+                            insertHelper.remove((FeatureToDelete) feature);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+
+                });
+        Iterator<RevObject> objects = Iterators.transform(filtered,
                 new Function<Feature, RevObject>() {
 
                     private int count;

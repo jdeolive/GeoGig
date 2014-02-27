@@ -33,8 +33,11 @@ public class CreateOSMChangeset extends AbstractCommand implements CLICommand {
     @Parameter(description = "[<commit> [<commit>]]", arity = 2)
     private List<String> refSpec = Lists.newArrayList();
 
-    @Parameter(names = "-f", description = "File to save changesets to")
+    @Parameter(names = "-f", description = "File to save changesets to", required = true)
     private String file;
+
+    @Parameter(names = "--id", description = "ID to use for replacing negative changeset IDs")
+    private Long id;
 
     /**
      * Executes the command with the specified options.
@@ -51,7 +54,7 @@ public class CreateOSMChangeset extends AbstractCommand implements CLICommand {
         String oldVersion = resolveOldVersion();
         String newVersion = resolveNewVersion();
 
-        op.setOldVersion(oldVersion).setNewVersion(newVersion);
+        op.setOldVersion(oldVersion).setNewVersion(newVersion).setId(id);
 
         Iterator<ChangeContainer> entries;
         entries = op.setProgressListener(cli.getProgressListener()).call();

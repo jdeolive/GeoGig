@@ -7,7 +7,7 @@ package org.geogit.api.porcelain;
 /**
  * Exception that indicates that a rebase operation cannot be finished due to merge conflicts
  */
-public class RebaseConflictsException extends RuntimeException {
+public class RebaseConflictsException extends ConflictsException {
 
     private static final long serialVersionUID = 1L;
 

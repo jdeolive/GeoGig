@@ -49,6 +49,7 @@ import com.mongodb.WriteResult;
  */
 public class MongoObjectDatabase implements ObjectDatabase {
     private final MongoConnectionManager manager;
+
     protected final ConfigDatabase config;
 
     private MongoClient client = null;
@@ -98,10 +99,10 @@ public class MongoObjectDatabase implements ObjectDatabase {
         if (client != null) {
             return;
         }
-        String hostname = config.get("mongo.host").get();
-        int port = config.get("mongo.port", Integer.class).get();
-        client = manager.acquire(new MongoAddress(hostname, port));
-        db = client.getDB("geogit");
+        String uri = config.get("mongodb.uri").get();
+        String database = config.get("mongodb.database").get();
+        client = manager.acquire(new MongoAddress(uri));
+        db = client.getDB(database);
         collection = db.getCollection(getCollectionName());
         collection.ensureIndex("oid");
     }
@@ -114,6 +115,12 @@ public class MongoObjectDatabase implements ObjectDatabase {
     @Override
     public void configure() throws RepositoryConnectionException {
         RepositoryConnectionException.StorageType.OBJECT.configure(config, "mongodb", "0.1");
+        String uri = config.get("mongodb.uri").or(config.getGlobal("mongodb.uri"))
+                .or("mongodb://localhost:27017/");
+        String database = config.get("mongodb.database").or(config.getGlobal("mongodb.database"))
+                .or("geogit");
+        config.put("mongodb.uri", uri);
+        config.put("mongodb.database", database);
     }
 
     @Override
@@ -268,7 +275,7 @@ public class MongoObjectDatabase implements ObjectDatabase {
             boolean put = put(object);
             if (put) {
                 listener.inserted(object.getId(), null);
-            }else{
+            } else {
                 listener.found(object.getId(), null);
             }
         }

@@ -130,9 +130,15 @@ public class ResetOp extends AbstractGeoGitOp<Boolean> {
                 Iterator<DiffEntry> diff = diffOp.call();
 
                 final long numChanges = Iterators.size(diffOp.call());
-
-                repository.getIndex().stage(subProgress((1.f / patterns.size()) * 100.f), diff,
-                        numChanges);
+                if (numChanges == 0) {
+                    // We are reseting to the current version, so there is nothing to do. However,
+                    // if we are in a conflict state, the conflict should be removed and calling
+                    // stage() will not do it, so we do it here
+                    repository.getIndex().getDatabase().removeConflict(null, pattern);
+                } else {
+                    repository.getIndex().stage(subProgress((1.f / patterns.size()) * 100.f), diff,
+                            numChanges);
+                }
             }
         } else {
             if (mode == ResetMode.NONE) {

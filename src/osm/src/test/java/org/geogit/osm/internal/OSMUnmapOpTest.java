@@ -16,6 +16,7 @@ import org.geogit.api.plumbing.ResolveFeatureType;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.porcelain.AddOp;
 import org.geogit.api.porcelain.CommitOp;
+import org.geogit.osm.internal.MappingRule.DefaultField;
 import org.geogit.repository.WorkingTree;
 import org.geogit.storage.FieldType;
 import org.geogit.test.integration.RepositoryTestCase;
@@ -60,7 +61,8 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.LINESTRING));
         fields.put("name", new AttributeDefinition("name", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("residential", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("residential", mappings, filterExclude, fields,
+                null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
@@ -136,6 +138,66 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
     }
 
     @Test
+    public void testMappingAndUnmappingOfWaysFromPolygons() throws Exception {
+        // import and check that we have both ways and nodes
+        String filename = OSMImportOp.class.getResource("ways_restriction.xml").getFile();
+        File file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        WorkingTree workTree = geogit.getRepository().getWorkingTree();
+        long unstaged = workTree.countUnstaged("way").getCount();
+        assertTrue(unstaged > 0);
+        unstaged = workTree.countUnstaged("node").getCount();
+        assertTrue(unstaged > 0);
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("msg").call();
+
+        // Define mapping
+        Map<String, AttributeDefinition> fields = Maps.newHashMap();
+        Map<String, List<String>> filter = Maps.newHashMap();
+        filter.put("geom", Lists.newArrayList("closed"));
+        fields.put("geom", new AttributeDefinition("geom", FieldType.POLYGON));
+        fields.put("lit", new AttributeDefinition("lit", FieldType.STRING));
+        Map<String, List<String>> filterExclude = Maps.newHashMap();
+        MappingRule mappingRule = new MappingRule("polygons", filter, filterExclude, fields, null);
+        List<MappingRule> mappingRules = Lists.newArrayList();
+        mappingRules.add(mappingRule);
+        Mapping mapping = new Mapping(mappingRules);
+        geogit.command(OSMMapOp.class).setMapping(mapping).call();
+
+        // Check that mapping was correctly performed
+        Optional<RevFeature> revFeature = geogit.command(RevObjectParse.class)
+                .setRefSpec("HEAD:polygons/31045880").call(RevFeature.class);
+        assertTrue(revFeature.isPresent());
+        ImmutableList<Optional<Object>> values = revFeature.get().getValues();
+        assertEquals(4, values.size());
+        String wkt = "POLYGON ((7.1923367 50.7395887, 7.1923127 50.7396946, 7.1923444 50.7397419, 7.1924199 50.7397781, 7.1923367 50.7395887))";
+        assertEquals(wkt, values.get(2).get().toString());
+        assertEquals("yes", values.get(1).get());
+        revFeature = geogit.command(RevObjectParse.class).setRefSpec("HEAD:polygons/24777894")
+                .call(RevFeature.class);
+        assertFalse(revFeature.isPresent());
+
+        // delete the original feature
+        geogit.getRepository().getWorkingTree().delete("way/31045880");
+        Optional<RevFeature> original = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:way/31045880").call(RevFeature.class);
+        assertFalse(original.isPresent());
+
+        // unmap
+        geogit.command(OSMUnmapOp.class).setPath("polygons").call();
+
+        // check that the original way has been recreated
+        Optional<RevFeature> unmapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:way/31045880").call(RevFeature.class);
+        assertTrue(unmapped.isPresent());
+        values = unmapped.get().getValues();
+        assertEquals(
+                "LINESTRING (7.1923367 50.7395887, 7.1923127 50.7396946, 7.1923444 50.7397419, 7.1924199 50.7397781, 7.1923367 50.7395887)",
+                values.get(7).get().toString());
+
+    }
+
+    @Test
     public void testMappingAndUnmappingOfNodes() throws Exception {
         // Import
         String filename = OSMImportOp.class.getResource("nodes.xml").getFile();
@@ -151,7 +213,7 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
         fields.put("name", new AttributeDefinition("name", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields, null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
@@ -225,7 +287,7 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
         fields.put("name", new AttributeDefinition("name", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields, null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
@@ -276,7 +338,7 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
         fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields, null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);
@@ -348,6 +410,94 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
     }
 
     @Test
+    public void testMappingAndUnmappingOfNodesWithDefaultFieds() throws Exception {
+        // Import
+        String filename = OSMImportOp.class.getResource("nodes.xml").getFile();
+        File file = new File(filename);
+        geogit.command(OSMImportOp.class).setDataSource(file.getAbsolutePath()).call();
+        geogit.command(AddOp.class).call();
+        geogit.command(CommitOp.class).setMessage("msg").call();
+        // Map
+        Map<String, AttributeDefinition> fields = Maps.newHashMap();
+        Map<String, List<String>> mappings = Maps.newHashMap();
+        mappings.put("highway", Lists.newArrayList("bus_stop"));
+        fields.put("geom", new AttributeDefinition("geom", FieldType.POINT));
+        fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
+        Map<String, List<String>> filterExclude = Maps.newHashMap();
+        ArrayList<DefaultField> defaultFields = Lists.newArrayList(DefaultField.tags,
+                DefaultField.timestamp);
+        MappingRule mappingRule = new MappingRule("busstops", mappings, filterExclude, fields,
+                defaultFields);
+        List<MappingRule> mappingRules = Lists.newArrayList();
+        mappingRules.add(mappingRule);
+        Mapping mapping = new Mapping(mappingRules);
+        geogit.command(OSMMapOp.class).setMapping(mapping).call();
+
+        Optional<RevFeature> revFeature = geogit.command(RevObjectParse.class)
+                .setRefSpec("HEAD:busstops/507464799").call(RevFeature.class);
+        assertTrue(revFeature.isPresent());
+        Optional<RevFeatureType> featureType = geogit.command(ResolveFeatureType.class)
+                .setRefSpec("HEAD:busstops/507464799").call();
+        assertTrue(featureType.isPresent());
+        ImmutableList<Optional<Object>> values = revFeature.get().getValues();
+        assertEquals(5, values.size());
+        String wkt = "POINT (7.1959361 50.739397)";
+        assertEquals(wkt, values.get(4).get().toString());
+        assertEquals(507464799l, values.get(0).get());
+
+        // Modify a node
+        GeometryFactory gf = new GeometryFactory();
+        SimpleFeatureBuilder fb = new SimpleFeatureBuilder((SimpleFeatureType) featureType.get()
+                .type());
+        fb.set("geom", gf.createPoint(new Coordinate(0, 1)));
+        fb.set("name_alias", "newname");
+        fb.set("id", 507464799l);
+        fb.set("tags",
+                "VRS:gemeinde:BONN|VRS:ortsteil:Hoholz|VRS:ref:68566|bus:yes|highway:bus_stop|name:Gielgen|public_transport:platform");
+        fb.set("timestamp", 1355097351000l);
+        SimpleFeature newFeature = fb.buildFeature("507464799");
+        geogit.getRepository().getWorkingTree().insert("busstops", newFeature);
+
+        // check that it was correctly inserted in the working tree
+        Optional<RevFeature> mapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:busstops/507464799").call(RevFeature.class);
+        assertTrue(mapped.isPresent());
+        values = mapped.get().getValues();
+        assertEquals("POINT (0 1)", values.get(4).get().toString());
+        assertEquals(507464799l, ((Long) values.get(0).get()).longValue());
+        assertEquals("newname", values.get(3).get().toString());
+        assertEquals("1355097351000", values.get(2).get().toString());
+        assertEquals(
+                "VRS:gemeinde:BONN|VRS:ortsteil:Hoholz|VRS:ref:68566|bus:yes|highway:bus_stop|name:Gielgen|public_transport:platform",
+                values.get(1).get().toString());
+
+        // unmap
+        geogit.command(OSMUnmapOp.class).setPath("busstops").call();
+
+        WorkingTree workTree = geogit.getRepository().getWorkingTree();
+        long unstaged = workTree.countUnstaged("node").getCount();
+        assertEquals(1, unstaged);
+
+        // check that the unmapped node has the changes we introduced
+        Optional<RevFeature> unmapped = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:node/507464799").call(RevFeature.class);
+        assertTrue(unmapped.isPresent());
+        values = unmapped.get().getValues();
+        assertEquals("POINT (0 1)", values.get(6).get().toString());
+        assertEquals(
+                "bus:yes|public_transport:platform|highway:bus_stop|VRS:ortsteil:Hoholz|name:newname|VRS:ref:68566|VRS:gemeinde:BONN",
+                values.get(3).get().toString());
+        // check that unchanged nodes keep their attributes
+        Optional<RevFeature> unchanged = geogit.command(RevObjectParse.class)
+                .setRefSpec("WORK_HEAD:node/1633594723").call(RevFeature.class);
+        values = unchanged.get().getValues();
+        assertEquals("14220478", values.get(4).get().toString());
+        assertEquals("1355097351000", values.get(2).get().toString());
+        assertEquals("2", values.get(1).get().toString());
+
+    }
+
+    @Test
     public void testMappingAndUnmappingOfWaysWithAlias() throws Exception {
         // Import
         String filename = OSMImportOp.class.getResource("ways.xml").getFile();
@@ -362,7 +512,8 @@ public class OSMUnmapOpTest extends RepositoryTestCase {
         fields.put("geom", new AttributeDefinition("geom", FieldType.LINESTRING));
         fields.put("name", new AttributeDefinition("name_alias", FieldType.STRING));
         Map<String, List<String>> filterExclude = Maps.newHashMap();
-        MappingRule mappingRule = new MappingRule("residential", mappings, filterExclude, fields);
+        MappingRule mappingRule = new MappingRule("residential", mappings, filterExclude, fields,
+                null);
         List<MappingRule> mappingRules = Lists.newArrayList();
         mappingRules.add(mappingRule);
         Mapping mapping = new Mapping(mappingRules);

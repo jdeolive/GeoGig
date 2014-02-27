@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.geogit</groupId>
     <artifactId>geogit</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -23,6 +23,26 @@
     <dependency>
       <groupId>org.geogit</groupId>
       <artifactId>geogit-bdbje</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
+      <artifactId>geogit-blueprints</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
+      <artifactId>geogit-neo4j</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
+      <artifactId>geogit-mongodb</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
+      <artifactId>geogit-sqlite-xerial</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -78,6 +98,12 @@
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
     </dependency>
+    
+	<dependency>
+  		<groupId>net.sf.py4j</groupId>
+  		<artifactId>py4j</artifactId>
+  		<version>0.8.1</version>
+	</dependency>
 
     <!-- Test scope dependencies -->
     <dependency>

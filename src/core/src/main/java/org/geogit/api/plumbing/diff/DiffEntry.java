@@ -157,8 +157,17 @@ public class DiffEntry {
      */
     @Override
     public String toString() {
-        return new StringBuilder(changeType().toString()).append(" [").append(oldObject)
-                .append("] -> [").append(newObject).append(']').toString();
+        StringBuilder sb = new StringBuilder(changeType().toString());
+        if (!isAdd()) {
+            sb.append(" [").append(oldObject).append("]");
+        }
+        if (isChange()) {
+            sb.append(" -> ");
+        }
+        if (!isDelete()) {
+            sb.append(" [").append(newObject).append(']');
+        }
+        return sb.toString();
     }
 
     /**

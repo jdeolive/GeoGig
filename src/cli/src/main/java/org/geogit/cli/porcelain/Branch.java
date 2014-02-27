@@ -87,6 +87,9 @@ public class Branch extends AbstractCommand implements CLICommand {
     @Parameter(names = { "--delete", "-d" })
     private boolean delete = false;
 
+    @Parameter(names = { "--orphan", "-o" }, description = "create an orphan branch")
+    private boolean orphan = false;
+
     @Parameter(names = { "--force", "-f" }, description = "Force renaming/creating of a branch if the specified branc name already exists")
     private boolean force = false;
 
@@ -156,7 +159,7 @@ public class Branch extends AbstractCommand implements CLICommand {
         final String origin = branchName.size() > 1 ? branchName.get(1) : Ref.HEAD;
 
         Ref newBranch = geogit.command(BranchCreateOp.class).setName(branch).setForce(force)
-                .setAutoCheckout(checkout).setSource(origin).call();
+                .setOrphan(orphan).setAutoCheckout(checkout).setSource(origin).call();
 
         console.println("Created branch " + newBranch.getName());
     }

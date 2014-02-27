@@ -20,6 +20,7 @@ import org.geogit.rest.repository.DepthResource;
 import org.geogit.rest.repository.EndPush;
 import org.geogit.rest.repository.FilteredChangesResource;
 import org.geogit.rest.repository.ManifestResource;
+import org.geogit.rest.repository.MergeFeatureResource;
 import org.geogit.rest.repository.ObjectExistsResource;
 import org.geogit.rest.repository.ObjectFinder;
 import org.geogit.rest.repository.ParentResource;
@@ -115,6 +116,7 @@ public class GeogitDispatcher extends AbstractController {
         router.attach("/affectedfeatures", AffectedFeaturesResource.class);
         router.attach("/filteredchanges", new FilteredChangesResource());
         router.attach("/applychanges", new ApplyChangesResource());
+        router.attach("/mergefeature", MergeFeatureResource.class);
         return router;
     }
 

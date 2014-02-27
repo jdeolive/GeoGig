@@ -14,13 +14,19 @@ import java.util.List;
 import org.geogit.api.Node;
 import org.geogit.api.NodeRef;
 import org.geogit.api.ObjectId;
+import org.geogit.api.Platform;
 import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevTree;
+import org.geogit.api.TestPlatform;
+
 import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.diff.DiffEntry;
+import org.geogit.repository.FeatureToDelete;
 import org.geogit.repository.WorkingTree;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geotools.util.NullProgressListener;
+import org.jeo.data.Query;
+import org.jeo.data.mem.MemVector;
 import org.jeo.feature.Feature;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,6 +34,7 @@ import org.junit.rules.ExpectedException;
 import org.opengis.feature.type.Name;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 /**
  *
@@ -40,6 +47,17 @@ public class WorkingTreeTest extends RepositoryTestCase {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    @Override
+    protected Platform createPlatform() {
+        Platform testPlatform = new TestPlatform(envHome) {
+            @Override
+            public int availableProcessors() {
+                return 2;
+            }
+        };
+        return testPlatform;
+    }
 
     @Override
     protected void setUpInternal() throws Exception {
@@ -75,6 +93,41 @@ public class WorkingTreeTest extends RepositoryTestCase {
 
         assertEquals(ref1.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP1)).get()
                 .getObjectId());
+        assertEquals(ref2.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP2)).get()
+                .getObjectId());
+        assertEquals(ref3.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP3)).get()
+                .getObjectId());
+    }
+
+    @Test
+    public void testInsertIncludingFeatureToDelete() throws Exception {
+        List<Feature> featureList = new LinkedList<Feature>();
+        featureList.add(points1);
+
+        List<Node> targetList = new LinkedList<Node>();
+        workTree.insert(pointsName, featureList.iterator(), LISTENER, targetList, 1);
+
+        assertEquals(1, targetList.size());
+
+        Node ref1 = targetList.get(0);
+        assertEquals(ref1.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP1)).get()
+                .getObjectId());
+
+        featureList.clear();
+        featureList.add(new FeatureToDelete(pointsType, idP1));
+        featureList.add(points2);
+        featureList.add(points3);
+
+        targetList.clear();
+
+        workTree.insert(pointsName, featureList.iterator(), LISTENER, targetList, 3);
+
+        assertEquals(2, targetList.size());
+
+        Node ref2 = targetList.get(0);
+        Node ref3 = targetList.get(1);
+
+        assertFalse(workTree.findUnstaged(appendChild(pointsName, idP1)).isPresent());
         assertEquals(ref2.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP2)).get()
                 .getObjectId());
         assertEquals(ref3.getObjectId(), workTree.findUnstaged(appendChild(pointsName, idP3)).get()
@@ -142,6 +195,39 @@ public class WorkingTreeTest extends RepositoryTestCase {
         workTree.insert(pointsName, featureList.iterator(), LISTENER, targetList, -5);
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Test
+    public void testInsertNonPagingFeatureSource() throws Exception {
+        assertEquals(2, super.getGeogit().getPlatform().availableProcessors());
+
+        MemVector store = new MemVector(pointsType);
+        store.add(points1);
+        store.add(points2);
+        store.add(points3);
+
+        String treePath = "target_typename";
+        workTree.insert(treePath, store, new Query(), new NullProgressListener());
+
+        assertEquals(3, workTree.countUnstaged(treePath).getFeaturesCount());
+
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Test
+    public void testInsertPagingFeatureSource() throws Exception {
+        assertEquals(2, super.getGeogit().getPlatform().availableProcessors());
+
+        MemVector store = new MemVector(pointsType);
+        store.add(points1);
+        store.add(points2);
+        store.add(points3);
+
+        String treePath = "target_typename";
+        workTree.insert(treePath, store, new Query(), new NullProgressListener());
+
+        assertEquals(3, workTree.countUnstaged(treePath).getFeaturesCount());
+    }
+
     @Test
     public void testInsertCollectionNoTarget() throws Exception {
         List<Feature> featureList = new LinkedList<Feature>();
@@ -193,7 +279,6 @@ public class WorkingTreeTest extends RepositoryTestCase {
         workTree.update(pointsName, modifiedFeatures.iterator(), LISTENER, 1);
         assertFalse(workTree.findUnstaged(appendChild(pointsName, idP1)).get().getObjectId()
                 .equals(oID1));
-
     }
 
     @Test

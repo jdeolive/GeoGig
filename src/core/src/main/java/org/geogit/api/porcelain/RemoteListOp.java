@@ -55,7 +55,6 @@ public class RemoteListOp extends AbstractGeoGitOp<ImmutableList<Remote>> {
                         .or(remoteFetchURL.get()), remoteFetch.get(), remoteMapped.or("false")
                         .equals("true"), remoteMappedBranch.orNull()));
             }
-
         }
         return ImmutableList.copyOf(allRemotes);
     }

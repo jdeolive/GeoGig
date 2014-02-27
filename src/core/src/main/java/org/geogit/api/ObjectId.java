@@ -10,9 +10,9 @@ import java.util.Arrays;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
-import com.google.common.hash.HashCodes;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * A {@link RevObject} identifier backed by a hash function (SHA1 for instance)
@@ -110,13 +110,21 @@ public final class ObjectId implements Comparable<ObjectId> {
                 | ((hashCode[3] & 0xFF) << 24);
     }
 
+    private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
     /**
      * @return a human friendly representation of this SHA1
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
-        return HashCodes.fromBytes(hashCode).toString();
+        StringBuilder sb = new StringBuilder(2 * NUM_BYTES);
+        byte b;
+        for (int i = 0; i < NUM_BYTES; i++) {
+            b = hashCode[i];
+            sb.append(HEX_DIGITS[(b >> 4) & 0xf]).append(HEX_DIGITS[b & 0xf]);
+        }
+        return sb.toString();
     }
 
     /**
@@ -166,6 +174,9 @@ public final class ObjectId implements Comparable<ObjectId> {
     }
 
     /**
+     * Implementation of {@link Comparable#compareTo(Object)} that compares the hash code bytes
+     * treating them as unsigned bytes.
+     * 
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     public int compareTo(final ObjectId o) {
@@ -175,14 +186,7 @@ public final class ObjectId implements Comparable<ObjectId> {
     }
 
     public static int compare(byte[] left, byte[] right) {
-        int c;
-        for (int i = 0; i < left.length; i++) {
-            c = left[i] - right[i];
-            if (c != 0) {
-                return c;
-            }
-        }
-        return 0;
+        return UnsignedBytes.lexicographicalComparator().compare(left, right);
     }
 
     /**

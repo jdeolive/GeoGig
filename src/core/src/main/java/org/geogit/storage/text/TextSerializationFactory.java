@@ -32,12 +32,14 @@ import org.geogit.api.RevFeatureType;
 import org.geogit.api.RevObject;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.api.RevPerson;
+import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 import org.geogit.api.RevTreeImpl;
 import org.geogit.storage.FieldType;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.ObjectWriter;
+
 import org.jeo.feature.Field;
 import org.jeo.feature.Schema;
 import org.jeo.feature.SchemaBuilder;
@@ -163,6 +165,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             return (ObjectWriter<T>) FEATURETYPE_WRITER;
         case TREE:
             return (ObjectWriter<T>) TREE_WRITER;
+        case TAG:
+            return (ObjectWriter<T>) TAG_WRITER;
         default:
             throw new IllegalArgumentException("Unknown or unsupported object type: " + type);
         }
@@ -180,6 +184,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             return (ObjectReader<T>) FEATURETYPE_READER;
         case TREE:
             return (ObjectReader<T>) TREE_READER;
+        case TAG:
+            return (ObjectReader<T>) TAG_READER;
         default:
             throw new IllegalArgumentException("Unknown or unsupported object type: " + type);
         }
@@ -387,38 +393,12 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             print(w, "1");
             print(w, "\t");
             print(w, "true");
-            
+
             if (attrib.isGeometry()) {
                 CoordinateReferenceSystem crs = attrib.getCRS();
-                String srsName;
-                if (crs == null) {
-                    srsName = "urn:ogc:def:crs:EPSG::0";
-                } else {
-                    // use a flag to control whether the code is returned in EPSG: form instead of
-                    // urn:ogc:.. form irrespective of the org.geotools.referencing.forceXY System
-                    // property.
-                    final boolean longitudeFirst = true;
-                    boolean codeOnly = true;
-                    Integer crsCode = Proj.epsgCode(crs);
-                    if (crsCode != null) {
-                        srsName = (longitudeFirst ? "EPSG:" : "urn:ogc:def:crs:EPSG::") + crsCode;
-                        // check that what we are writing is actually a valid EPSG code and we will
-                        // be able to decode it later. If not, we will use WKT instead
-                        try {
-                            Proj.crs(srsName);
-                        } catch (Exception e) {
-                            srsName = null;
-                        } 
-                    } else {
-                        srsName = null;
-                    }
-                }
+                String crsText = CrsTextSerializer.serialize(crs);
                 print(w, "\t");
-                if (srsName != null) {
-                    print(w, srsName, "\n");
-                } else {
-                    println(w, crs.getParameterString());
-                }
+                println(w, crsText);
             } else {
                 println(w, "");
             }
@@ -491,6 +471,42 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 print(w, ";");
                 println(w, Double.toString(env.getMaxY()));
             }
+        }
+
+    };
+
+    /**
+     * Tag writer.
+     * <p>
+     * Output format:
+     * 
+     * <pre>
+     * {@code TAG\n}
+     * {@code "name" + "\t" +  <tagname> + "\n"}
+     * {@code "commitid" + "\t" +  <comitid> + "\n"}  
+     * {@code "message" + "\t" +  <message> + "\n"}
+     *  {@code "tagger" + "\t" +  <tagger name>  + " " + <tagger email>  + "\t" + <tagger> + "\t" + <tagger_timezone_offset> + "\n"}
+     * </pre>
+     * 
+     */
+    private static final TextWriter<RevTag> TAG_WRITER = new TextWriter<RevTag>() {
+
+        @Override
+        protected void print(RevTag tag, Writer w) throws IOException {
+            println(w, "name\t", tag.getName());
+            println(w, "commitid\t", tag.getCommitId().toString());
+            println(w, "message\t", tag.getMessage());
+            print(w, "tagger");
+            print(w, "\t");
+            print(w, tag.getTagger().getName().or(" "));
+            print(w, "\t");
+            print(w, tag.getTagger().getEmail().or(" "));
+            print(w, "\t");
+            print(w, Long.toString(tag.getTagger().getTimestamp()));
+            print(w, "\t");
+            print(w, Long.toString(tag.getTagger().getTimeZoneOffset()));
+            println(w);
+            w.flush();
         }
 
     };
@@ -576,6 +592,8 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 return TREE_READER.read(id, read, type);
             case FEATURETYPE:
                 return FEATURETYPE_READER.read(id, read, type);
+            case TAG:
+                return TAG_READER.read(id, read, type);
             default:
                 throw new IllegalArgumentException("Unknown object type " + type);
             }
@@ -771,22 +789,7 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             Field attributeDescriptor;
             if (Geometry.class.isAssignableFrom(type)) {
                 String crsText = tokens.get(5);
-                CoordinateReferenceSystem crs;
-                boolean crsCode = crsText.startsWith("EPSG")
-                        || crsText.startsWith("urn:ogc:def:crs:EPSG");
-                try {
-                    if (crsCode) {
-                        if ("urn:ogc:def:crs:EPSG::0".equals(crsText)) {
-                            crs = null;
-                        } else {
-                            crs = Proj.crs(crsText);
-                        }
-                    } else {
-                        crs = Proj.crs(crsText);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Cannot parse CRS definition: " + crsText);
-                }
+                CoordinateReferenceSystem crs = CrsTextSerializer.deserialize(crsText);
 
                 attributeDescriptor = new Field(name, type, crs);
             } else {
@@ -871,6 +874,47 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
                 throw new IllegalArgumentException("Wrong bbox definition: " + s);
             }
 
+        }
+
+    };
+
+    /**
+     * Tag reader.
+     * <p>
+     * Parses a tag of the format:
+     * 
+     * <pre>
+     * {@code TAG\n}
+     * {@code "name" + "\t" +  <tagname> + "\n"}
+     * {@code "commitid" + "\t" +  <comitid> + "\n"}  
+     * {@code "message" + "\t" +  <message> + "\n"}
+     *  {@code "tagger" + "\t" +  <tagger name>  + " " + <tagger email>  + "\t" + <tagger> + "\t" + <tagger_timezone_offset> + "\n"}
+     * </pre>
+     * 
+     */
+    private static final TextReader<RevTag> TAG_READER = new TextReader<RevTag>() {
+
+        @Override
+        protected RevTag read(ObjectId id, BufferedReader reader, TYPE type) throws IOException {
+            Preconditions.checkArgument(TYPE.TAG.equals(type), "Wrong type: %s", type.name());
+            String name = parseLine(requireLine(reader), "name");
+            String message = parseLine(requireLine(reader), "message");
+            String commitId = parseLine(requireLine(reader), "commitid");
+            RevPerson tagger = parsePerson(requireLine(reader));
+            RevTag tag = new RevTag(id, name, ObjectId.valueOf(commitId), message, tagger);
+            return tag;
+        }
+
+        private RevPerson parsePerson(String line) throws IOException {
+            String[] tokens = line.split("\t");
+            String header = "tagger";
+            Preconditions.checkArgument(header.equals(tokens[0]), "Expected field %s, got '%s'",
+                    header, tokens[0]);
+            String name = tokens[1].trim().isEmpty() ? null : tokens[1];
+            String email = tokens[2].trim().isEmpty() ? null : tokens[2];
+            long timestamp = Long.parseLong(tokens[3]);
+            int offset = Integer.parseInt(tokens[4]);
+            return new RevPerson(name, email, timestamp, offset);
         }
 
     };

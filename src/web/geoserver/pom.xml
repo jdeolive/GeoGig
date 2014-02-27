@@ -6,13 +6,23 @@
   <parent>
     <groupId>org.geogit</groupId>
     <artifactId>web</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>geogit-geoserver</artifactId>
   <packaging>jar</packaging>
   <name>GeoGit GeoServer integration</name>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-expression</artifactId>
+        <version>3.1.1.RELEASE</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -24,6 +34,11 @@
       <groupId>org.geogit</groupId>
       <artifactId>geogit-web-api</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geoserver</groupId>
+      <artifactId>ows</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.geoserver</groupId>

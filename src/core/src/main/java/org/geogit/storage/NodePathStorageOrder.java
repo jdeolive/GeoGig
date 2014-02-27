@@ -15,6 +15,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
+import com.google.common.primitives.UnsignedBytes;
+import com.google.common.primitives.UnsignedLong;
 
 /**
  * Implements storage order of {@link Node} based on the non cryptographic 64-bit <a
@@ -60,7 +62,7 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
 
     private static final long serialVersionUID = -685759544293388523L;
 
-    private static HashOrder hashOrder = new FNV1a64bitHash();
+    private static final HashOrder hashOrder = new FNV1a64bitHash();
 
     @Override
     public int compare(String p1, String p2) {
@@ -93,33 +95,28 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
     }
 
     /**
-     * The FNV-1a hash function used as {@link Node} storage order
+     * The FNV-1a hash function used as {@link Node} storage order.
      */
     private static class FNV1a64bitHash extends HashOrder {
 
         private static final long serialVersionUID = -1931193743208260766L;
 
-        private static final long FNV64_OFFSET_BASIS = 0xcbf29ce484222325L;
+        private static final UnsignedLong FNV64_OFFSET_BASIS = UnsignedLong
+                .valueOf("14695981039346656037");
 
-        private static final long FNV64_PRIME = 0x100000001b3L;
+        private static final UnsignedLong FNV64_PRIME = UnsignedLong.valueOf("1099511628211");
 
         @Override
-        public int compare(String p1, String p2) {
-            long hash1 = fnv(p1);
-            long hash2 = fnv(p2);
-            if (hash1 == hash2) {
-                // hash collision, fallback to lexicographic order.
-                // unlikely but you never know. Haven't have a collision with 50 million nodes
-                return p1.compareTo(p2);
-            }
-            return hash1 < hash2 ? -1 : 1;
+        public int compare(final String p1, final String p2) {
+            UnsignedLong hash1 = fnv(p1);
+            UnsignedLong hash2 = fnv(p2);
+            return hash1.compareTo(hash2);
         }
 
-        public static long fnv(CharSequence chars) {
+        private static UnsignedLong fnv(CharSequence chars) {
             final int length = chars.length();
 
-            long hash = FNV64_OFFSET_BASIS;
-            Preconditions.checkState(hash < Long.MAX_VALUE);
+            UnsignedLong hash = FNV64_OFFSET_BASIS;
 
             for (int i = 0; i < length; i++) {
                 char c = chars.charAt(i);
@@ -131,43 +128,39 @@ public final class NodePathStorageOrder extends Ordering<String> implements Seri
             return hash;
         }
 
-        private static long update(long hash, byte octet) {
-            hash = hash ^ octet;
-            hash = hash * FNV64_PRIME;
+        private static UnsignedLong update(UnsignedLong hash, final byte octet) {
+            // it's ok to use the signed long value here, its a bitwise operation anyways, and its
+            // on the lower byte of the long value
+            final long longValue = hash.longValue();
+            final long bits = longValue ^ octet;
+
+            // System.err.println("hash : " + Long.toBinaryString(longValue));
+            // System.err.println("xor  : " + Long.toBinaryString(bits));
+            // System.err.println("octet: " + Integer.toBinaryString(octet));
+
+            // convert back to unsigned long
+            hash = UnsignedLong.fromLongBits(bits);
+            // multiply by prime
+            hash = hash.times(FNV64_PRIME);
             return hash;
         }
 
         /**
-         * Computes the bucket index that corresponds to the given node name at the given depth.
-         * 
-         * @return and Integer between zero and {@link RevTree#MAX_BUCKETS} minus one
+         * Returns the Nth unsigned byte in the hash of {@code nodeName} where N is given by
+         * {@code depth}
          */
         @Override
         public int byteN(final String nodeName, final int depth) {
+            Preconditions.checkArgument(depth < 8, "depth too deep: %s", Integer.valueOf(depth));
 
-            final long hashCode = fnv(nodeName);
-            switch (depth) {
-            case 0:
-                return (byte) (hashCode >>> 56) & 0xFF;
-            case 1:
-                return (byte) (hashCode >>> 48) & 0xFF;
-            case 2:
-                return (byte) (hashCode >>> 40) & 0xFF;
-            case 3:
-                return (byte) (hashCode >>> 32) & 0xFF;
-            case 4:
-                return (byte) (hashCode >>> 24) & 0xFF;
-            case 5:
-                return (byte) (hashCode >>> 16) & 0xFF;
-            case 6:
-                return (byte) (hashCode >>> 8) & 0xFF;
-            case 7:
-                return (byte) (hashCode >>> 0) & 0xFF;
-            default:
-                throw new IllegalArgumentException("depth too deep: " + depth);
-            }
+            final long longBits = fnv(nodeName).longValue();
+
+            final int displaceBits = 8 * (7 - depth);// how many bits to right shift longBits to get
+                                                     // the byte N
+
+            final int byteN = ((byte) (longBits >> displaceBits)) & 0xFF;
+            return byteN;
         }
-
     }
 
     /**

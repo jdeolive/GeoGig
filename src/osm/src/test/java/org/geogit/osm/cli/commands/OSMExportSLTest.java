@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sqlite.SQLiteConfig;
+import org.spatialite.SQLiteConfig;
 
 import com.google.common.base.Optional;
 
@@ -55,10 +55,10 @@ public class OSMExportSLTest extends Assert {
         Throwable thrown = null;
 
         try {
-            Class.forName("org.sqlite.JDBC");
+            Class.forName("org.spatialite.JDBC");
             SQLiteConfig config = new SQLiteConfig();
             config.enableSpatiaLite(true);
-            connection = DriverManager.getConnection("jdbc:sqlite::memory:", config.toProperties());
+            connection = DriverManager.getConnection("jdbc:spatialite::memory:", config.toProperties());
             Statement statement = connection.createStatement();
             statement.execute("SELECT InitSpatialMetaData();");
         } catch (SQLException e) {

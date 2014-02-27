@@ -8,12 +8,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.List;
 
 import org.geogit.api.AbstractGeoGitOp;
 import org.geogit.api.ObjectId;
@@ -26,10 +28,14 @@ import org.geogit.api.plumbing.UpdateSymRef;
 import org.geogit.di.CanRunDuringConflict;
 import org.geogit.repository.Repository;
 import org.geogit.repository.RepositoryConnectionException;
+import org.geogit.storage.ConfigDatabase;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -55,6 +61,10 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
 
     private Injector injector;
 
+    private List<String> config;
+
+    private String filterFile;
+
     /**
      * Constructs a new {@code InitOp} with the specified parameters.
      * 
@@ -68,6 +78,16 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
         checkNotNull(injector);
         this.platform = platform;
         this.injector = injector;
+    }
+
+    public InitOp setConfig(List<String> config) {
+        this.config = config;
+        return this;
+    }
+
+    public InitOp setFilterFile(String filterFile) {
+        this.filterFile = filterFile;
+        return this;
     }
 
     /**
@@ -84,11 +104,11 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
     public Repository call() {
         final File workingDirectory = platform.pwd();
         checkState(workingDirectory != null, "working directory is null");
-        final URL repoUrl = new ResolveGeogitDir(platform).call();
+        final Optional<URL> repoUrl = new ResolveGeogitDir(platform).call();
 
         boolean repoExisted = false;
         File envHome;
-        if (repoUrl == null) {
+        if (!repoUrl.isPresent()) {
             envHome = new File(workingDirectory, ".geogit");
             envHome.mkdirs();
             if (!envHome.exists()) {
@@ -98,31 +118,81 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
         } else {
             // we're at either the repo working dir or a subdirectory of it
             try {
-                envHome = new File(repoUrl.toURI());
+                envHome = new File(repoUrl.get().toURI());
             } catch (URISyntaxException e) {
                 throw Throwables.propagate(e);
             }
             repoExisted = true;
         }
 
+        ImmutableList.Builder<String> effectiveConfigBuilder = ImmutableList.builder();
+        if (config != null)
+            effectiveConfigBuilder.addAll(config);
+
+        if (filterFile != null) {
+            try {
+                final String FILTER_FILE = "filter.ini";
+
+                File oldFilterFile = new File(filterFile);
+                if (!oldFilterFile.exists()) {
+                    throw new FileNotFoundException("No filter file found at " + filterFile + ".");
+                }
+
+                Optional<URL> envHomeURL = new ResolveGeogitDir(platform).call();
+                Preconditions.checkState(envHomeURL.isPresent(), "Not inside a geogit directory");
+                final URL url = envHomeURL.get();
+                if (!"file".equals(url.getProtocol())) {
+                    throw new UnsupportedOperationException(
+                            "Sparse clone works only against file system repositories. "
+                                    + "Repository location: " + url.toExternalForm());
+                }
+
+                File repoDir;
+                try {
+                    repoDir = new File(url.toURI());
+                } catch (URISyntaxException e) {
+                    throw Throwables.propagate(e);
+                }
+
+                File newFilterFile = new File(repoDir, FILTER_FILE);
+
+                Files.copy(oldFilterFile, newFilterFile);
+                effectiveConfigBuilder.add("sparse.filter", FILTER_FILE);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to copy filter file at path " + filterFile
+                        + " to the new repository.", e);
+            }
+        }
+
         try {
             Preconditions.checkState(envHome.toURI().toURL()
-                    .equals(new ResolveGeogitDir(platform).call()));
+                    .equals(new ResolveGeogitDir(platform).call().get()));
         } catch (MalformedURLException e) {
             Throwables.propagate(e);
         }
 
         Repository repository;
         try {
-            repository = injector.getInstance(Repository.class);
             if (!repoExisted) {
+                ConfigDatabase configDB = injector.getInstance(ConfigDatabase.class);
                 try {
+                    ImmutableList<String> effectiveConfig = effectiveConfigBuilder.build();
+                    if (!effectiveConfig.isEmpty()) {
+                        for (List<String> pair : Iterables.partition(effectiveConfig, 2)) {
+                            String key = pair.get(0);
+                            String value = pair.get(1);
+                            configDB.put(key, value);
+                        }
+                    }
+                    repository = injector.getInstance(Repository.class);
                     repository.configure();
                 } catch (RepositoryConnectionException e) {
                     throw new IllegalStateException(
                             "Unable to initialize repository for the first time: " + e.getMessage(),
                             e);
                 }
+            } else {
+                repository = injector.getInstance(Repository.class);
             }
             try {
                 repository.open();
@@ -131,6 +201,8 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
                         + e.getMessage(), e);
             }
             createSampleHooks(envHome);
+        } catch (ConfigException e) {
+            throw e;
         } catch (RuntimeException e) {
             Throwables.propagateIfInstanceOf(e, IllegalStateException.class);
             throw new IllegalStateException("Can't access repository at '"
@@ -149,7 +221,6 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
     }
 
     private void createSampleHooks(File envHome) {
-
         File hooks = new File(envHome, "hooks");
         hooks.mkdirs();
         if (!hooks.exists()) {
@@ -161,16 +232,13 @@ public class InitOp extends AbstractGeoGitOp<Repository> {
         } catch (IOException e) {
             throw new RuntimeException();
         }
-
     }
 
     private void copyHookFile(String folder, String file) throws IOException {
-
         URL url = Resources.getResource("org/geogit/api/hooks/" + file);
         OutputStream os = new FileOutputStream(new File(folder, file).getAbsolutePath());
         Resources.copy(url, os);
         os.close();
-
     }
 
     private void createDefaultRefs() {

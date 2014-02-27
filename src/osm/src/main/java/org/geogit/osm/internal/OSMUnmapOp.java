@@ -22,6 +22,7 @@ import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.LsTreeOp.Strategy;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.plumbing.diff.DiffEntry;
+import org.geogit.osm.internal.MappingRule.DefaultField;
 import org.geogit.osm.internal.log.OSMMappingLogEntry;
 import org.geogit.osm.internal.log.ReadOSMMapping;
 import org.geogit.osm.internal.log.ReadOSMMappingLogEntry;
@@ -62,6 +63,8 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
 
     private static final int NODE_TAGS_FIELD_INDEX = getPropertyIndex(nodeType, "tags");
 
+    private static final int NODE_USER_FIELD_INDEX = getPropertyIndex(nodeType, "user");
+
     private static final int NODE_TIMESTAMP_FIELD_INDEX = getPropertyIndex(nodeType, "timestamp");
 
     private static final int NODE_VERSION_FIELD_INDEX = getPropertyIndex(nodeType, "version");
@@ -77,6 +80,10 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
     private static final int WAY_VERSION_FIELD_INDEX = getPropertyIndex(wayType, "version");
 
     private static final int WAY_CHANGESET_FIELD_INDEX = getPropertyIndex(wayType, "changeset");
+
+    private static final int WAY_USER_FIELD_INDEX = getPropertyIndex(wayType, "user");
+
+    final String UNKNOWN_USER = "Unknown";
 
     private static int getPropertyIndex(RevFeatureType type, String name) {
 
@@ -215,7 +222,7 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         long timestamp = System.currentTimeMillis();
         int version = 1;
         long changeset = -1;
-        String user = null;
+        String user = UNKNOWN_USER;
         Collection<Tag> tags = Lists.newArrayList();
         if (rawFeature.isPresent()) {
             ImmutableList<Optional<Object>> values = rawFeature.get().getValues();
@@ -235,6 +242,10 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
             Optional<Object> changesetOpt = values.get(NODE_CHANGESET_FIELD_INDEX);
             if (changesetOpt.isPresent()) {
                 changeset = ((Long) changesetOpt.get()).longValue();
+            }
+            Optional<Object> userOpt = values.get(NODE_USER_FIELD_INDEX);
+            if (userOpt.isPresent()) {
+                user = (String) userOpt.get();
             }
         }
 
@@ -259,11 +270,13 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
                     }
                 }
 
-                if (tagsMap.containsKey(tagName) && !modified) {
-                    String oldValue = tagsMap.get(tagName);
-                    modified = !value.equals(oldValue);
+                if (!DefaultField.isDefaultField(tagName)) {
+                    if (tagsMap.containsKey(tagName) && !modified) {
+                        String oldValue = tagsMap.get(tagName);
+                        modified = !value.equals(oldValue);
+                    }
+                    tagsMap.put(tagName, value.toString());
                 }
-                tagsMap.put(tagName, value.toString());
             }
         }
 
@@ -288,7 +301,6 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
             // the feature has changed, so we cannot reuse some attributes.
             // We reconstruct the feature and insert it
             featureBuilder.set("timestamp", System.currentTimeMillis());
-            featureBuilder.set("user", null);
             featureBuilder.set("changeset", null);
             featureBuilder.set("version", null);
             featureBuilder.set("visible", true);
@@ -376,7 +388,7 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         long timestamp = System.currentTimeMillis();
         int version = 1;
         long changeset = -1;
-        String user = null;
+        String user = UNKNOWN_USER;
         Collection<Tag> tags = Lists.newArrayList();
         if (rawFeature.isPresent()) {
             ImmutableList<Optional<Object>> values = rawFeature.get().getValues();
@@ -396,6 +408,10 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
             Optional<Object> changesetOpt = values.get(WAY_CHANGESET_FIELD_INDEX);
             if (changesetOpt.isPresent()) {
                 changeset = ((Long) changesetOpt.get()).longValue();
+            }
+            Optional<Object> userOpt = values.get(WAY_USER_FIELD_INDEX);
+            if (userOpt.isPresent()) {
+                user = (String) userOpt.get();
             }
         }
 
@@ -421,11 +437,13 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
                     }
                 }
 
-                if (tagsMap.containsKey(tagName) && !modified) {
-                    String oldValue = tagsMap.get(tagName);
-                    modified = !value.equals(oldValue);
+                if (!DefaultField.isDefaultField(tagName)) {
+                    if (tagsMap.containsKey(tagName) && !modified) {
+                        String oldValue = tagsMap.get(tagName);
+                        modified = !value.equals(oldValue);
+                    }
+                    tagsMap.put(tagName, value.toString());
                 }
-                tagsMap.put(tagName, value.toString());
             }
         }
 
@@ -439,7 +457,15 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         for (Entry<String, String> entry : entries) {
             tags.add(new Tag(entry.getKey(), entry.getValue()));
         }
-        LineString line = (LineString) feature.getDefaultGeometry();
+
+        Geometry geom = (Geometry) feature.getDefaultGeometry();
+        LineString line;
+        if (geom instanceof LineString) {
+            line = (LineString) geom;
+        } else {
+            line = gf.createLineString(geom.getCoordinates());
+        }
+        featureBuilder.set("visible", true);
         featureBuilder.set("tags", OSMUtils.buildTagsString(tags));
         featureBuilder.set("way", line);
         featureBuilder.set("changeset", changeset);
@@ -450,13 +476,13 @@ public class OSMUnmapOp extends AbstractGeoGitOp<RevTree> {
         if (rawFeature.isPresent()) {
             // the feature has changed, so we cannot reuse some attributes
             featureBuilder.set("timestamp", System.currentTimeMillis());
-            featureBuilder.set("user", null);
-            featureBuilder.set("changeset", null);
-            featureBuilder.set("version", null);
+            featureBuilder.set("changeset", -changeset); // temporary negative changeset ID
+            // featureBuilder.set("version", version);
             flusher.put("way", featureBuilder.buildFeature(id));
         } else {
             flusher.put("way", featureBuilder.buildFeature(id));
         }
 
     }
+
 }

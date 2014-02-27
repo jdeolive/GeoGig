@@ -6,11 +6,12 @@ package org.geogit.api;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
-import org.ini4j.Profile.Section;
-import org.ini4j.Wini;
-
+import org.geogit.storage.fs.INIFile;
 import com.google.common.base.Throwables;
 
 /**
@@ -27,14 +28,24 @@ public class IniRepositoryFilter extends RepositoryFilter {
      * @throws FileNotFoundException
      */
     public IniRepositoryFilter(final String filterFile) throws FileNotFoundException {
-        File f = new File(filterFile);
+        final File f = new File(filterFile);
         if (f.exists()) {
             try {
-                final Wini ini = new Wini(f);
+                final INIFile ini = new INIFile() { 
+                    @Override
+                    public File iniFile() {
+                        return f;
+                    }
+                };
 
-                for (Entry<String, Section> section : ini.entrySet()) {
-                    if (section.getValue().getParent() == null) {
-                        parseFilter(section.getKey(), section.getValue());
+                final Map<String, String> pairs = ini.getAll();
+
+                Set<String> seen = new HashSet<String>();
+                for (Entry<String, String> pair : pairs.entrySet()) {
+                    String qualifiedName = pair.getKey();
+                    String[] split = qualifiedName.split("\\.");
+                    if (split.length == 2 && seen.add(split[0])) {
+                        parseFilter(split[0], pairs);
                     }
                 }
             } catch (Exception e) {
@@ -49,12 +60,12 @@ public class IniRepositoryFilter extends RepositoryFilter {
      * Parses an ini section and adds it as a filter.
      * 
      * @param featurePath the path of the features to filter
-     * @param attributes the ini section
+     * @param config the ini
      */
-    private void parseFilter(String featurePath, Section attributes) {
+    private void parseFilter(String featurePath, Map<String, String> config) {
         if (featurePath != null) {
-            String type = attributes.get("type");
-            String filter = attributes.get("filter");
+            String type = config.get(featurePath + ".type");
+            String filter = config.get(featurePath + ".filter");
             addFilter(featurePath, type, filter);
         }
     }

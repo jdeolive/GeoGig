@@ -50,6 +50,8 @@ public class CreateOSMChangesetOp extends AbstractGeoGitOp<Iterator<ChangeContai
 
     private String newRefSpec;
 
+    private Long id;
+
     /**
      * @param revObjectSpec the old version to compare against
      * @return {@code this}
@@ -82,6 +84,20 @@ public class CreateOSMChangesetOp extends AbstractGeoGitOp<Iterator<ChangeContai
      */
     public CreateOSMChangesetOp setNewVersion(ObjectId treeishOid) {
         return setNewVersion(treeishOid.toString());
+    }
+
+    /**
+     * Sets the Id to be used to replace negative IDs. This is to be used if creating a changeset
+     * for a dataset that contains modified entities. These entities do not have an id assigned, so
+     * the OSM API should be queried to obtain the changeset id, and then used here to replace the
+     * temporary negative IDs that are used as placeholders
+     * 
+     * @param id the id used to replace negative ids
+     */
+    public CreateOSMChangesetOp setId(Long id) {
+        this.id = id;
+        return this;
+
     }
 
     /**
@@ -121,7 +137,7 @@ public class CreateOSMChangesetOp extends AbstractGeoGitOp<Iterator<ChangeContai
                     featureBuilder.set(descriptor.getName(), value.orNull());
                 }
                 SimpleFeature feature = featureBuilder.buildFeature(ref.name());
-                Entity entity = converter.toEntity(feature);
+                Entity entity = converter.toEntity(feature, id);
                 EntityContainer container;
                 if (entity instanceof Node) {
                     container = new NodeContainer((Node) entity);
@@ -140,4 +156,5 @@ public class CreateOSMChangesetOp extends AbstractGeoGitOp<Iterator<ChangeContai
         };
         return Iterators.transform(iterator, function);
     }
+
 }

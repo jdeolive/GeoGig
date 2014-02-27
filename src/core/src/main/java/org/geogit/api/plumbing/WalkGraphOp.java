@@ -17,7 +17,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterators;
 import com.google.inject.Inject;
 
-public final class WalkGraphOp extends AbstractGeoGitOp<Iterator<RevObject>> {
+public class WalkGraphOp extends AbstractGeoGitOp<Iterator<RevObject>> {
 
     private String reference;
 

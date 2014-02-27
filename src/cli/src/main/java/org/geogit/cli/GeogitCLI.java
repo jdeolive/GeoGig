@@ -88,7 +88,7 @@ public class GeogitCLI {
 
     private ConsoleReader consoleReader;
 
-    private DefaultProgressListener progressListener;
+    protected ProgressListener progressListener;
 
     /**
      * Construct a GeogitCLI with the given console reader.
@@ -163,7 +163,7 @@ public class GeogitCLI {
     private GeoGIT loadRepository() {
         GeoGIT geogit = newGeoGIT();
 
-        if (null != geogit.command(ResolveGeogitDir.class).call()) {
+        if (geogit.command(ResolveGeogitDir.class).call().isPresent()) {
             geogit.getRepository();
             return geogit;
         }
@@ -242,9 +242,8 @@ public class GeogitCLI {
             throw Throwables.propagate(e);
         }
 
-        int exitCode = 0;
         GeogitCLI cli = new GeogitCLI(consoleReader);
-        cli.processCommand(args);
+        int exitCode = cli.processCommand(args);
 
         try {
             cli.close();
@@ -263,8 +262,8 @@ public class GeogitCLI {
     void tryConfigureLogging() {
         // instantiate and call ResolveGeogitDir directly to avoid calling getGeogit() and hence get
         // some logging events before having configured logging
-        final URL geogitDirUrl = new ResolveGeogitDir(getPlatform()).call();
-        if (geogitDirUrl == null || !"file".equalsIgnoreCase(geogitDirUrl.getProtocol())) {
+        final Optional<URL> geogitDirUrl = new ResolveGeogitDir(getPlatform()).call();
+        if (!geogitDirUrl.isPresent() || !"file".equalsIgnoreCase(geogitDirUrl.get().getProtocol())) {
             // redirect java.util.logging to SLF4J anyways
             SLF4JBridgeHandler.removeHandlersForRootLogger();
             SLF4JBridgeHandler.install();
@@ -273,7 +272,7 @@ public class GeogitCLI {
 
         final File geogitDir;
         try {
-            geogitDir = new File(geogitDirUrl.toURI());
+            geogitDir = new File(geogitDirUrl.get().toURI());
         } catch (URISyntaxException e) {
             throw Throwables.propagate(e);
         }
@@ -659,7 +658,9 @@ public class GeogitCLI {
 
                 private final ConsoleReader console = getConsole();
 
-                private final NumberFormat fmt = NumberFormat.getPercentInstance();
+                private final NumberFormat percentFormat = NumberFormat.getPercentInstance();
+
+                private final NumberFormat numberFormat = NumberFormat.getIntegerInstance();
 
                 private final long delayNanos = TimeUnit.NANOSECONDS.convert(100,
                         TimeUnit.MILLISECONDS);
@@ -717,7 +718,11 @@ public class GeogitCLI {
                     if (description != null) {
                         cursorBuffer.write(description);
                     }
-                    cursorBuffer.write(fmt.format(percent / 100f));
+                    if (percent > 100) {
+                        cursorBuffer.write(numberFormat.format(percent));
+                    } else {
+                        cursorBuffer.write(percentFormat.format(percent / 100f));
+                    }
                     try {
                         console.redrawLine();
                         console.flush();

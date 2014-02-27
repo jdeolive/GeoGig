@@ -28,7 +28,7 @@ import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.StagingDatabase;
 import org.geogit.storage.datastream.DataStreamSerializationFactory;
-import org.geogit.storage.fs.IniConfigDatabase;
+import org.geogit.storage.fs.IniFileConfigDatabase;
 import org.geogit.storage.memory.HeapObjectDatabse;
 import org.geogit.storage.memory.HeapStagingDatabase;
 import org.geogit.test.integration.RepositoryTestCase;
@@ -84,7 +84,7 @@ public class CachingModuleTest {
                 bind(ObjectDatabase.class).to(HeapObjectDatabse.class).in(Scopes.SINGLETON);
                 bind(StagingDatabase.class).to(HeapStagingDatabase.class).in(Scopes.SINGLETON);
 
-                ConfigDatabase config = new IniConfigDatabase(platform);
+                ConfigDatabase config = new IniFileConfigDatabase(platform);
                 bind(ConfigDatabase.class).toInstance(config);
 
                 bind(ObjectDatabaseCacheFactory.class).toInstance(odbCacheFac);

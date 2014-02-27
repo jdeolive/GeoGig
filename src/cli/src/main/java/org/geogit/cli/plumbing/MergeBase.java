@@ -49,10 +49,10 @@ public class MergeBase extends AbstractCommand implements CLICommand {
         checkParameter(left.isPresent(), commits.get(0) + " does not resolve to any object.");
         checkParameter(left.get() instanceof RevCommit, commits.get(0)
                 + " does not resolve to a commit");
-        Optional<RevObject> right = geogit.command(RevObjectParse.class).setRefSpec(commits.get(0))
+        Optional<RevObject> right = geogit.command(RevObjectParse.class).setRefSpec(commits.get(1))
                 .call();
-        checkParameter(right.isPresent(), commits.get(0) + " does not resolve to any object.");
-        checkParameter(right.get() instanceof RevCommit, commits.get(0)
+        checkParameter(right.isPresent(), commits.get(1) + " does not resolve to any object.");
+        checkParameter(right.get() instanceof RevCommit, commits.get(1)
                 + " does not resolve to a commit");
         Optional<RevCommit> ancestor = geogit.command(FindCommonAncestor.class)
                 .setLeft((RevCommit) left.get()).setRight((RevCommit) right.get()).call();

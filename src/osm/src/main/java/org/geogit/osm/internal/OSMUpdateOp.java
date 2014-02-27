@@ -34,7 +34,7 @@ import com.google.common.base.Suppliers;
  * Updates the OSM data using the existing filter.
  * 
  */
-public class OSMUpdateOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
+public class OSMUpdateOp extends AbstractGeoGitOp<Optional<OSMReport>> {
 
     private String apiUrl;
 
@@ -82,7 +82,7 @@ public class OSMUpdateOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
      */
     @SuppressWarnings("deprecation")
     @Override
-    public Optional<OSMDownloadReport> call() {
+    public Optional<OSMReport> call() {
         final Optional<Ref> currHead = command(RefParse.class).setName(Ref.HEAD).call();
         Preconditions.checkState(currHead.isPresent(), "Repository has no HEAD, can't update.");
         Preconditions.checkState(currHead.get() instanceof SymRef,
@@ -119,7 +119,7 @@ public class OSMUpdateOp extends AbstractGeoGitOp<Optional<OSMDownloadReport>> {
         Preconditions.checkState(filter.isPresent(), "Filter file not found");
 
         message = message == null ? "Updated OSM data" : message;
-        Optional<OSMDownloadReport> report = command(OSMImportOp.class).setMessage(message)
+        Optional<OSMReport> report = command(OSMImportOp.class).setMessage(message)
                 .setFilter(filter.get()).setDataSource(apiUrl)
                 .setProgressListener(getProgressListener()).call();
 

@@ -66,7 +66,7 @@ public class OSMMapOp extends AbstractGeoGitOp<RevTree> {
     }
 
     /**
-     * Sets the message to use for the commit is created
+     * Sets the message to use for the commit that is created
      * 
      * @param message the commit message
      * @return {@code this}

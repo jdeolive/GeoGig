@@ -29,7 +29,11 @@ import org.geogit.cli.AbstractCommand;
 import org.geogit.cli.CLICommand;
 import org.geogit.cli.GeogitCLI;
 import org.geogit.storage.FieldType;
+import org.geogit.storage.text.CrsTextSerializer;
+import org.opengis.feature.type.GeometryType;
 import org.opengis.feature.type.PropertyDescriptor;
+import org.opengis.feature.type.PropertyType;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -60,7 +64,6 @@ public class Show extends AbstractCommand implements CLICommand {
      */
     @Override
     public void runInternal(GeogitCLI cli) throws IOException {
-        checkParameter(refs.size() < 2, "Only one refspec allowed");
         checkParameter(!refs.isEmpty(), "A refspec must be specified");
         if (raw) {
             printRaw(cli);
@@ -94,7 +97,18 @@ public class Show extends AbstractCommand implements CLICommand {
                     ImmutableList<Optional<Object>> values = feature.getValues();
                     int i = 0;
                     for (Optional<Object> value : values) {
-                        ansi.a(attribs.get(i).getName()).newline();
+                        PropertyDescriptor attrib = attribs.get(i);
+                        ansi.a(attrib.getName()).newline();
+                        PropertyType attrType = attrib.getType();
+                        String typeName = FieldType.forBinding(attrType.getBinding()).name();
+                        if (attrType instanceof GeometryType) {
+                            GeometryType gt = (GeometryType) attrType;
+                            CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
+                            String crsText = CrsTextSerializer.serialize(crs);
+                            ansi.a(typeName).a(" ").a(crsText).newline();
+                        } else {
+                            ansi.a(typeName).newline();
+                        }
                         ansi.a(value.or("[NULL]").toString()).newline();
                         i++;
                     }
@@ -132,7 +146,9 @@ public class Show extends AbstractCommand implements CLICommand {
                     RevFeature feature = (RevFeature) revObject;
                     Ansi ansi = super.newAnsi(console.getTerminal());
                     ansi.newline().fg(Color.YELLOW).a("ID:  ").reset()
-                            .a(feature.getId().toString()).newline().newline();
+                            .a(feature.getId().toString()).newline();
+                    ansi.fg(Color.YELLOW).a("FEATURE TYPE ID:  ").reset().a(ft.getId().toString())
+                            .newline().newline();
                     ansi.a("ATTRIBUTES  ").newline();
                     ansi.a("----------  ").newline();
                     ImmutableList<Optional<Object>> values = feature.getValues();

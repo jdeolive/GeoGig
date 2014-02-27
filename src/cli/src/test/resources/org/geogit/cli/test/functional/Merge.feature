@@ -94,6 +94,6 @@ Feature: "merge" command
      
   Scenario: Try to abort when there is no conflict
     Given I have a repository
-     When I run the command "merge branch1 --abort"
+     When I run the command "merge --abort"
      Then the response should contain "There is no merge to abort"
       And it should exit with non-zero exit code            

@@ -31,6 +31,8 @@ OPTIONS
     
 --filter <file>					Ini file containing the filter to be used to create a sparse clone.
 
+--config <config_name>=<config_value>[,<config_name>=<config_value>]  Initial configuration parameters for the new repository.  See the documentation for geogit init
+
 SEE ALSO
 ********
 

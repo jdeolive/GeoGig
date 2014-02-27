@@ -85,7 +85,7 @@ public class GeogitConsole {
                 if (line.trim().startsWith("#")) {// comment
                     continue;
                 }
-                String[] args = line.split(" ");
+                String[] args = ArgumentTokenizer.tokenize(line);
                 cli.processCommand(args);
             }
 
@@ -209,7 +209,7 @@ public class GeogitConsole {
                 continue;
             }
 
-            String[] args = line.split(" ");
+            String[] args = ArgumentTokenizer.tokenize(line);
 
             if (args != null && args.length == 1 && "exit".equals(args[0])) {
                 return;
@@ -224,4 +224,5 @@ public class GeogitConsole {
             setPrompt(cli);// in case HEAD has changed
         }
     }
+
 }
