@@ -171,6 +171,11 @@
         <version>${guice.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.google.inject.extensions</groupId>
+        <artifactId>guice-multibindings</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.vividsolutions</groupId>
         <artifactId>jts</artifactId>
         <version>${jts.version}</version>
@@ -210,6 +215,11 @@
             <artifactId>jdom</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.geoserver</groupId>
+        <artifactId>ows</artifactId>
+        <version>${gs.version}</version>
       </dependency>
       <dependency>
         <groupId>org.geoserver</groupId>

@@ -55,6 +55,12 @@ public class GeoGitDataStoreFactory implements DataStoreFactorySpi {
             "Optional branch name the DataStore operates against, defaults to the currently checked out branch",
             false);
 
+    public static final Param HEAD = new Param(
+            "head",
+            String.class,
+            "Optional refspec (branch name, commit id, etc.) the DataStore operates against, defaults to the currently checked out branch",
+            false);
+
     public static final Param DEFAULT_NAMESPACE = new Param("namespace", String.class,
             "Optional namespace for feature types that do not declare a Namespace themselves",
             false);
@@ -74,7 +80,7 @@ public class GeoGitDataStoreFactory implements DataStoreFactorySpi {
 
     @Override
     public Param[] getParametersInfo() {
-        return new Param[] { REPOSITORY, BRANCH, DEFAULT_NAMESPACE, CREATE };
+        return new Param[] { REPOSITORY, BRANCH, HEAD, DEFAULT_NAMESPACE, CREATE };
     }
 
     @Override
@@ -116,6 +122,12 @@ public class GeoGitDataStoreFactory implements DataStoreFactorySpi {
         @Nullable
         final String branch = (String) BRANCH.lookUp(params);
 
+        @Nullable 
+        final String head = (String) HEAD.lookUp(params);
+
+        @Nullable
+        final String effectiveHead = (head == null) ? branch : head;
+
         @Nullable
         final Boolean create = (Boolean) CREATE.lookUp(params);
 
@@ -145,8 +157,8 @@ public class GeoGitDataStoreFactory implements DataStoreFactorySpi {
         if (defaultNamespace != null) {
             store.setNamespaceURI(defaultNamespace);
         }
-        if (branch != null) {
-            store.setBranch(branch);
+        if (effectiveHead != null) {
+            store.setHead(effectiveHead);
         }
         return store;
     }

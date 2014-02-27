@@ -11,7 +11,7 @@ Feature: "init" command
 
   Scenario: Create repository specifying initial configuration
     Given I am in an empty directory
-     When I run the command "init --config foo.bar baz"
+     When I run the command "init --config foo.bar=baz"
      Then it should answer "Initialized empty Geogit repository in ${currentdir}/.geogit"
       And the repository directory shall exist
      When I run the command "config foo.bar"

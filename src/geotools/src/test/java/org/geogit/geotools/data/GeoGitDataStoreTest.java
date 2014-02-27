@@ -117,7 +117,7 @@ public class GeoGitDataStoreTest extends RepositoryTestCase {
         final String branchName = "testBranch";
         geogit.command(BranchCreateOp.class).setName(branchName).setOrphan(true).call();
 
-        dataStore.setBranch(branchName);
+        dataStore.setHead(branchName);
         final SimpleFeatureType featureType = super.linesType;
         dataStore.createSchema(featureType);
 
