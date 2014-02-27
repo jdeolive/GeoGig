@@ -33,14 +33,6 @@ public class XerialGraphDatabase extends SQLiteGraphDatabase<DataSource> {
 
     static Logger LOG = LoggerFactory.getLogger(XerialGraphDatabase.class);
 
-    static final String NODES = "nodes";
-
-    static final String EDGES = "edges";
-
-    static final String PROPS = "props";
-
-    static final String MAPPINGS = "mappings";
-
     @Inject
     public XerialGraphDatabase(ConfigDatabase configdb, Platform platform) {
         super(configdb, platform);

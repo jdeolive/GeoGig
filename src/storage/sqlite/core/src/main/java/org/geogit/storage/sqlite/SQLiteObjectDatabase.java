@@ -47,6 +47,8 @@ import com.google.common.collect.Lists;
  */
 public abstract class SQLiteObjectDatabase<C> implements ObjectDatabase {
 
+    protected static final String OBJECTS = "objects";
+
     final Platform platform;
 
     final ConfigDatabase configdb;
