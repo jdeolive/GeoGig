@@ -24,7 +24,7 @@
       <groupId>com.vividsolutions</groupId>
       <artifactId>jts</artifactId>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-opengis</artifactId>
     </dependency>
@@ -43,6 +43,10 @@
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-cql</artifactId>
+    </dependency-->
+    <dependency>
+      <groupId>org.jeo</groupId>
+      <artifactId>jeo</artifactId>
     </dependency>
 
     <dependency>

@@ -49,18 +49,14 @@ import org.geogit.api.plumbing.diff.DiffObjectCount;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.BulkOpListener.CountingListener;
 import org.geogit.storage.StagingDatabase;
-import org.geotools.data.FeatureSource;
-import org.geotools.data.Query;
-import org.geotools.data.store.FeatureIteratorIterator;
-import org.geotools.factory.Hints;
-import org.geotools.feature.FeatureCollection;
-import org.geotools.feature.FeatureIterator;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.feature.Feature;
-import org.opengis.feature.type.FeatureType;
+import org.jeo.data.Cursor;
+import org.jeo.data.Query;
+import org.jeo.data.VectorDataset;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Features;
+import org.jeo.feature.Schema;
+import org.jeo.filter.Filter;
 import org.opengis.feature.type.Name;
-import org.opengis.filter.Filter;
-import org.opengis.geometry.BoundingBox;
 import org.opengis.util.ProgressListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +69,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -285,7 +282,7 @@ public class WorkingTree {
         String featurePath;
 
         while (affectedFeatures.hasNext()) {
-            fid = affectedFeatures.next().getIdentifier().getID();
+            fid = affectedFeatures.next().getId();
             featurePath = NodeRef.appendChild(typeName.getLocalPart(), fid);
             Optional<Node> ref = findUnstaged(featurePath);
             if (ref.isPresent()) {
@@ -365,7 +362,7 @@ public class WorkingTree {
         }
     }
 
-    public synchronized NodeRef createTypeTree(final String treePath, final FeatureType featureType) {
+    public synchronized NodeRef createTypeTree(final String treePath, final Schema featureType) {
 
         final RevTree workHead = getTree();
         Optional<NodeRef> typeTreeRef = commandLocator.command(FindTreeChild.class).setIndex(true)
@@ -397,7 +394,7 @@ public class WorkingTree {
      */
     public Node insert(final String parentTreePath, final Feature feature) {
 
-        final FeatureType featureType = feature.getType();
+        final Schema featureType = feature.schema();
 
         NodeRef treeRef;
 
@@ -439,8 +436,7 @@ public class WorkingTree {
         return featureRef.get().getNode();
     }
 
-    @SuppressWarnings({ "rawtypes", "deprecation" })
-    public void insert(final String treePath, final FeatureSource source, final Query query,
+    public void insert(final String treePath, final VectorDataset source, final Query query,
             ProgressListener listener) {
 
         final NodeRef treeRef = findOrCreateTypeTree(treePath, source);
@@ -448,9 +444,9 @@ public class WorkingTree {
         Long collectionSize = null;
         try {
             // try for a fast count
-            int count = source.getCount(Query.ALL);
+            long count = source.count(new Query());
             if (count > -1) {
-                collectionSize = Long.valueOf(count);
+                collectionSize = count;
             }
         } catch (IOException e) {
             throw Throwables.propagate(e);
@@ -460,7 +456,8 @@ public class WorkingTree {
         {
             // maxFeatures is assumed to be supported by all data sources, so supportsPaging depends
             // only on offset being supported
-            boolean supportsPaging = source.getQueryCapabilities().isOffsetSupported();
+            //TODO: fix this, expose query capabilities in VectorDataset
+            boolean supportsPaging = false; /*source.getQueryCapabilities().isOffsetSupported();*/
             if (supportsPaging) {
                 Platform platform = commandLocator.getPlatform();
                 int availableProcessors = platform.availableProcessors();
@@ -516,8 +513,7 @@ public class WorkingTree {
 
     }
 
-    private NodeRef findOrCreateTypeTree(final String treePath,
-            @SuppressWarnings("rawtypes") final FeatureSource source) {
+    private NodeRef findOrCreateTypeTree(final String treePath, final VectorDataset source) {
 
         final NodeRef treeRef;
         {
@@ -527,15 +523,19 @@ public class WorkingTree {
             if (typeTreeRef.isPresent()) {
                 treeRef = typeTreeRef.get();
             } else {
-                FeatureType featureType = source.getSchema();
+                Schema featureType;
+                try {
+                    featureType = source.schema();
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
+                }
                 treeRef = createTypeTree(treePath, featureType);
             }
         }
         return treeRef;
     }
 
-    @SuppressWarnings("rawtypes")
-    private List<Future<Integer>> insertBlobs(final FeatureSource source, final Query baseQuery,
+    private List<Future<Integer>> insertBlobs(final VectorDataset source, final Query baseQuery,
             final ExecutorService executorService, final ProgressListener listener,
             final @Nullable Long collectionSize, int nTasks, RevTreeBuilder2 builder) {
 
@@ -579,8 +579,7 @@ public class WorkingTree {
 
         private final BulkOpListener listener;
 
-        @SuppressWarnings("rawtypes")
-        private FeatureSource source;
+        private VectorDataset source;
 
         private int offset;
 
@@ -588,7 +587,7 @@ public class WorkingTree {
 
         private RevTreeBuilder2 builder;
 
-        private BlobInsertTask(@SuppressWarnings("rawtypes") FeatureSource source, int offset,
+        private BlobInsertTask(VectorDataset source, int offset,
                 int limit, BulkOpListener listener, RevTreeBuilder2 builder) {
 
             this.source = source;
@@ -603,38 +602,41 @@ public class WorkingTree {
         public Integer call() throws Exception {
 
             final Query query = new Query();
-            CoordinateSequenceFactory coordSeq = new PackedCoordinateSequenceFactory();
-            query.getHints().add(new Hints(Hints.JTS_COORDINATE_SEQUENCE_FACTORY, coordSeq));
-            query.setStartIndex(offset);
+            
+            //TODO: support passing down coordinate factory
+            //CoordinateSequenceFactory coordSeq = new PackedCoordinateSequenceFactory();
+            //query.getHints().add(new Hints(Hints.JTS_COORDINATE_SEQUENCE_FACTORY, coordSeq));
+            query.offset(offset);
             if (limit > 0) {
-                query.setMaxFeatures(limit);
+                query.limit(limit);
             }
-            FeatureCollection collection = source.getFeatures(query);
-            FeatureIterator features = collection.features();
-            Iterator<Feature> fiterator = new FeatureIteratorIterator<Feature>(features);
 
-            Iterator<RevObject> objects = Iterators.transform(fiterator,
-                    new Function<Feature, RevObject>() {
-                        @Override
-                        public RevFeature apply(final Feature feature) {
-                            final RevFeature revFeature = RevFeatureBuilder.build(feature);
+            Cursor<Feature> collection = source.cursor(query);
+            Iterable<RevObject> objects = Iterables.transform(collection, 
+                new Function<Feature,RevObject>() {
+                    @Override
+                    public RevFeature apply(final Feature feature) {
+                        final RevFeature revFeature = RevFeatureBuilder.build(feature);
+    
+                        ObjectId id = revFeature.getId();
+                        String name = feature.getId();
 
-                            ObjectId id = revFeature.getId();
-                            String name = feature.getIdentifier().getID();
-                            BoundingBox bounds = feature.getBounds();
-                            FeatureType type = feature.getType();
-
-                            builder.putFeature(id, name, bounds, type);
-                            return revFeature;
-                        }
-
-                    });
+                        //TODO: should we reproject here? old behavior i believe woudl throw an 
+                        // exception if the feautre contained geometires in different projections
+                        Envelope bounds = Features.bounds(feature);
+                        Schema type = feature.schema();
+    
+                        builder.putFeature(id, name, bounds, type);
+                        return revFeature;
+                    }
+            });
 
             CountingListener countingListener = BulkOpListener.newCountingListener();
             try {
-                indexDatabase.putAll(objects, BulkOpListener.composite(listener, countingListener));
+                indexDatabase.putAll(objects.iterator(), 
+                    BulkOpListener.composite(listener, countingListener));
             } finally {
-                features.close();
+                collection.close();
             }
             return countingListener.inserted();
         }
@@ -861,8 +863,8 @@ public class WorkingTree {
 
         final RevFeature newFeature = RevFeatureBuilder.build(feature);
         final ObjectId objectId = newFeature.getId();
-        final Envelope bounds = (ReferencedEnvelope) feature.getBounds();
-        final String nodeName = feature.getIdentifier().getID();
+        final Envelope bounds = Features.bounds(feature);
+        final String nodeName = feature.getId();
 
         indexDatabase.put(newFeature);
 
@@ -889,7 +891,7 @@ public class WorkingTree {
      * @param path the path
      * @param featureType the new feature type definition to set as default for the passed path
      */
-    public NodeRef updateTypeTree(final String treePath, final FeatureType featureType) {
+    public NodeRef updateTypeTree(final String treePath, final Schema featureType) {
 
         // TODO: This is not the optimal way of doing this. A better solution should be found.
 

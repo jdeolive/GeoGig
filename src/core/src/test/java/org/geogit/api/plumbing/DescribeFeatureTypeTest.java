@@ -6,8 +6,8 @@ package org.geogit.api.plumbing;
 
 import org.geogit.api.RevFeatureType;
 import org.geogit.test.integration.RepositoryTestCase;
+import org.jeo.feature.Field;
 import org.junit.Test;
-import org.opengis.feature.type.PropertyDescriptor;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -37,10 +37,10 @@ public class DescribeFeatureTypeTest extends RepositoryTestCase {
     public void testDescribeFeatureType() throws Exception {
         DescribeFeatureType describe = new DescribeFeatureType();
 
-        ImmutableSet<PropertyDescriptor> properties = describe.setFeatureType(featureType).call();
+        ImmutableSet<Field> properties = describe.setFeatureType(featureType).call();
 
-        for (PropertyDescriptor prop : properties) {
-            assertTrue(pointsType.getDescriptors().contains(prop));
+        for (Field prop : properties) {
+            assertTrue(pointsType.getFields().contains(prop));
         }
 
     }

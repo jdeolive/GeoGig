@@ -39,30 +39,25 @@ import org.geogit.repository.Repository;
 import org.geogit.repository.WorkingTree;
 import org.geogit.storage.DeduplicationService;
 import org.geogit.test.integration.TestInjectorBuilder;
-import org.geotools.data.DataUtilities;
-import org.geotools.feature.NameImpl;
-import org.geotools.feature.SchemaException;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.geometry.jts.WKTReader2;
-import org.geotools.referencing.CRS;
-import org.geotools.util.logging.Logging;
+import org.jeo.feature.BasicFeature;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Features;
+import org.jeo.feature.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.GeometryDescriptor;
 import org.opengis.feature.type.Name;
-import org.opengis.geometry.BoundingBox;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.inject.Injector;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 public abstract class RemoteRepositoryTestCase {
 
@@ -84,9 +79,9 @@ public abstract class RemoteRepositoryTestCase {
 
     protected static final String pointsTypeSpec = "sp:String,ip:Integer,pp:Point:srid=4326";
 
-    protected static final Name pointsTypeName = new NameImpl("http://geogit.points", pointsName);
+    protected static final Name pointsTypeName = new Name("http://geogit.points", pointsName);
 
-    protected SimpleFeatureType pointsType;
+    protected Schema pointsType;
 
     protected Feature points1;
 
@@ -102,9 +97,9 @@ public abstract class RemoteRepositoryTestCase {
 
     protected static final String linesTypeSpec = "sp:String,ip:Integer,pp:LineString:srid=4326";
 
-    protected static final Name linesTypeName = new NameImpl("http://geogit.lines", linesName);
+    protected static final Name linesTypeName = new Name("http://geogit.lines", linesName);
 
-    protected SimpleFeatureType linesType;
+    protected Schema linesType;
 
     protected Feature lines1;
 
@@ -171,11 +166,10 @@ public abstract class RemoteRepositoryTestCase {
         }
 
         setup = true;
-        Logging.ALL.forceMonolineConsoleOutput();
         doSetUp();
     }
 
-    protected final void doSetUp() throws IOException, SchemaException, ParseException, Exception {
+    protected final void doSetUp() throws IOException, ParseException, Exception {
         localGeogit = new GeogitContainer("localtestrepository");
         remoteGeogit = new GeogitContainer("remotetestrepository");
 
@@ -187,7 +181,7 @@ public abstract class RemoteRepositoryTestCase {
         remoteRepo.setGeoGit(remoteGeogit.geogit);
         this.remoteRepo = remoteRepo;
 
-        pointsType = DataUtilities.createType(pointsNs, pointsName, pointsTypeSpec);
+        pointsType = Schema.build(pointsName).uri(pointsNs).fields(pointsTypeSpec).schema();
 
         points1 = feature(pointsType, idP1, "StringProp1_1", new Integer(1000), "POINT(1 1)");
         points1_modified = feature(pointsType, idP1, "StringProp1_1a", new Integer(1001),
@@ -195,7 +189,7 @@ public abstract class RemoteRepositoryTestCase {
         points2 = feature(pointsType, idP2, "StringProp1_2", new Integer(2000), "POINT(2 2)");
         points3 = feature(pointsType, idP3, "StringProp1_3", new Integer(3000), "POINT(3 3)");
 
-        linesType = DataUtilities.createType(linesNs, linesName, linesTypeSpec);
+        linesType = Schema.build(linesName).uri(linesNs).fields(linesTypeSpec).schema();
 
         lines1 = feature(linesType, idL1, "StringProp2_1", new Integer(1000),
                 "LINESTRING (1 1, 2 2)");
@@ -284,19 +278,19 @@ public abstract class RemoteRepositoryTestCase {
         //
     }
 
-    protected Feature feature(SimpleFeatureType type, String id, Object... values)
+    protected Feature feature(Schema type, String id, Object... values)
             throws ParseException {
-        SimpleFeatureBuilder builder = new SimpleFeatureBuilder(type);
+        List<Object> list = Lists.newArrayList();
         for (int i = 0; i < values.length; i++) {
             Object value = values[i];
-            if (type.getDescriptor(i) instanceof GeometryDescriptor) {
+            if (type.getFields().get(i).isGeometry()) {
                 if (value instanceof String) {
-                    value = new WKTReader2().read((String) value);
+                    value = new WKTReader().read((String) value);
                 }
             }
-            builder.set(i, value);
+            list.add(value);
         }
-        return builder.buildFeature(id);
+        return new BasicFeature(id, list, type);
     }
 
     protected List<RevCommit> populate(GeoGIT geogit, boolean oneCommitPerFeature,
@@ -340,11 +334,15 @@ public abstract class RemoteRepositoryTestCase {
      */
     protected ObjectId insert(GeoGIT geogit, Feature f) throws Exception {
         final WorkingTree workTree = geogit.getRepository().getWorkingTree();
-        Name name = f.getType().getName();
+        Name name = name(f.schema());
         String parentPath = name.getLocalPart();
         Node ref = workTree.insert(parentPath, f);
         ObjectId objectId = ref.getObjectId();
         return objectId;
+    }
+
+    Name name(Schema schema) {
+        return new Name(schema.getURI(), schema.getName());
     }
 
     protected void insertAndAdd(GeoGIT geogit, Feature... features) throws Exception {
@@ -376,9 +374,9 @@ public abstract class RemoteRepositoryTestCase {
 
     protected boolean delete(GeoGIT geogit, Feature f) throws Exception {
         final WorkingTree workTree = geogit.getRepository().getWorkingTree();
-        Name name = f.getType().getName();
+        Name name = name(f.schema());
         String localPart = name.getLocalPart();
-        String id = f.getIdentifier().getID();
+        String id = f.getId();
         boolean existed = workTree.delete(localPart, id);
         return existed;
     }
@@ -398,14 +396,15 @@ public abstract class RemoteRepositoryTestCase {
     /**
      * Computes the aggregated bounds of {@code features}, assuming all of them are in the same CRS
      */
-    protected ReferencedEnvelope boundsOf(Feature... features) {
-        ReferencedEnvelope bounds = null;
+    protected Envelope boundsOf(Feature... features) {
+        Envelope bounds = null;
         for (int i = 0; i < features.length; i++) {
             Feature f = features[i];
+            Envelope b = Features.boundsReprojected(f);
             if (bounds == null) {
-                bounds = (ReferencedEnvelope) f.getBounds();
+                bounds = b;
             } else {
-                bounds.include(f.getBounds());
+                bounds.expandToInclude(b);
             }
         }
         return bounds;
@@ -414,17 +413,12 @@ public abstract class RemoteRepositoryTestCase {
     /**
      * Computes the aggregated bounds of {@code features} in the {@code targetCrs}
      */
-    protected ReferencedEnvelope boundsOf(CoordinateReferenceSystem targetCrs, Feature... features)
+    protected Envelope boundsOf(CoordinateReferenceSystem targetCrs, Feature... features)
             throws Exception {
-        ReferencedEnvelope bounds = new ReferencedEnvelope(targetCrs);
+        Envelope bounds = new Envelope();
 
         for (int i = 0; i < features.length; i++) {
-            Feature f = features[i];
-            BoundingBox fbounds = f.getBounds();
-            if (!CRS.equalsIgnoreMetadata(targetCrs, fbounds)) {
-                fbounds = fbounds.toBounds(targetCrs);
-            }
-            bounds.include(fbounds);
+            bounds.expandToInclude(Features.boundsReprojected(features[i], targetCrs));
         }
         return bounds;
     }

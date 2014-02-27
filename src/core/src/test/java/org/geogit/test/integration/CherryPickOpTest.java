@@ -23,11 +23,11 @@ import org.geogit.api.porcelain.ConfigOp;
 import org.geogit.api.porcelain.ConfigOp.ConfigAction;
 import org.geogit.api.porcelain.LogOp;
 import org.geogit.api.porcelain.NothingToCommitException;
+import org.jeo.feature.Feature;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Suppliers;

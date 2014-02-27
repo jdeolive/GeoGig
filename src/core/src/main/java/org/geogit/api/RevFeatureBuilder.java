@@ -5,9 +5,9 @@
 package org.geogit.api;
 
 import java.util.Collection;
+import java.util.List;
 
-import org.opengis.feature.Feature;
-import org.opengis.feature.Property;
+import org.jeo.feature.Feature;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -31,12 +31,12 @@ public final class RevFeatureBuilder {
             throw new IllegalStateException("No feature set");
         }
 
-        Collection<Property> props = feature.getProperties();
+        List<Object> props = feature.list();
 
         ImmutableList.Builder<Optional<Object>> valuesBuilder = new ImmutableList.Builder<Optional<Object>>();
 
-        for (Property prop : props) {
-            valuesBuilder.add(Optional.fromNullable(prop.getValue()));
+        for (Object prop : props) {
+            valuesBuilder.add(Optional.fromNullable(prop));
         }
 
         return RevFeature.build(valuesBuilder.build());

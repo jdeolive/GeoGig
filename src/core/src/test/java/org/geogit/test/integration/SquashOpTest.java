@@ -20,10 +20,10 @@ import org.geogit.api.porcelain.LogOp;
 import org.geogit.api.porcelain.MergeOp;
 import org.geogit.api.porcelain.MergeOp.MergeReport;
 import org.geogit.api.porcelain.SquashOp;
+import org.jeo.feature.Feature;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -130,7 +130,7 @@ public class SquashOpTest extends RepositoryTestCase {
         for (Feature f : features) {
             insertAndAdd(f);
             final RevCommit commit = geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().getID()).call();
+                    .setMessage(f.getId()).call();
             commits.add(commit);
         }
         geogit.command(SquashOp.class).setSince(commits.get(1)).setUntil(commits.get(1))
@@ -150,7 +150,7 @@ public class SquashOpTest extends RepositoryTestCase {
         for (Feature f : features) {
             insertAndAdd(f);
             final RevCommit commit = geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().getID()).call();
+                    .setMessage(f.getId()).call();
             commits.add(commit);
         }
         geogit.command(SquashOp.class).setSince(commits.get(1)).setUntil(commits.get(2))

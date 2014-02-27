@@ -11,8 +11,8 @@ import org.geogit.api.porcelain.AddOp;
 import org.geogit.api.porcelain.BranchCreateOp;
 import org.geogit.api.porcelain.CheckoutOp;
 import org.geogit.api.porcelain.CommitOp;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
 
 public class ReportCommitConflictsOpTest extends RepositoryTestCase {
 

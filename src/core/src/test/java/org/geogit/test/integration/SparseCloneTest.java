@@ -41,13 +41,11 @@ import org.geogit.api.porcelain.PushOp;
 import org.geogit.remote.AbstractMappedRemoteRepo;
 import org.geogit.remote.LocalMappedRemoteRepo;
 import org.geogit.remote.RemoteRepositoryTestCase;
-import org.geotools.data.DataUtilities;
-import org.geotools.feature.NameImpl;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 
 import com.google.common.base.Optional;
@@ -73,9 +71,9 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
 
     protected static final String citiesTypeSpec = "name:String,population:Integer,pp:Point:srid=4326";
 
-    protected static final Name citiesTypeName = new NameImpl("http://geogit.cities", citiesName);
+    protected static final Name citiesTypeName = new Name("http://geogit.cities", citiesName);
 
-    protected SimpleFeatureType citiesType;
+    protected Schema citiesType;
 
     protected Feature city1;
 
@@ -91,9 +89,9 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
 
     protected static final String roadsTypeSpec = "name:String,length:Integer,pp:LineString:srid=4326";
 
-    protected static final Name roadsTypeName = new NameImpl("http://geogit.roads", roadsName);
+    protected static final Name roadsTypeName = new Name("http://geogit.roads", roadsName);
 
-    protected SimpleFeatureType roadsType;
+    protected Schema roadsType;
 
     protected Feature road1;
 
@@ -106,7 +104,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
 
     @Override
     protected void setUpInternal() throws Exception {
-        citiesType = DataUtilities.createType(citiesNs, citiesName, citiesTypeSpec);
+        citiesType = Schema.build(citiesName).uri(citiesNs).fields(citiesTypeSpec).schema();
 
         city1 = feature(citiesType, idC1, "San Francisco", new Integer(200000),
                 "POINT(10.5559899 -71.6524294)");
@@ -117,7 +115,8 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
         city3 = feature(citiesType, idC3, "Los Angeles", new Integer(1000000),
                 "POINT(34.0455 -118.2380)");
 
-        roadsType = DataUtilities.createType(roadsNs, roadsName, roadsTypeSpec);
+        roadsType = Schema.build(roadsName).uri(roadsNs).fields(roadsTypeSpec).schema();
+              
 
         road1 = feature(roadsType, idR1, "Main Street", new Integer(236),
                 "LINESTRING (37.76169 -122.44791, 34.0455 -118.2380)");
@@ -174,7 +173,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -243,7 +242,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -299,7 +298,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -365,7 +364,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -421,7 +420,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -476,7 +475,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
         // Add a commit that passes our filter to the remote.
         ObjectId oId = insertAndAdd(remoteGeogit.geogit, city1_modified);
         final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                .setMessage(city1_modified.getIdentifier().toString()).call();
+                .setMessage(city1_modified.getId()).call();
         Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                 .setObjectId(oId).call();
         assertTrue(childObject.isPresent());
@@ -502,7 +501,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
         // Add a commit that passes our filter to the remote.
         ObjectId oId = insertAndAdd(remoteGeogit.geogit, city1);
         final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                .setMessage(city1.getIdentifier().toString()).call();
+                .setMessage(city1.getId()).call();
         Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                 .setObjectId(oId).call();
         assertTrue(childObject.isPresent());
@@ -535,7 +534,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(localGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = localGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = localGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -583,7 +582,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(localGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = localGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = localGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -662,7 +661,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(localGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = localGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = localGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();
@@ -753,7 +752,7 @@ public class SparseCloneTest extends RemoteRepositoryTestCase {
             ObjectId oId = insertAndAdd(remoteGeogit.geogit, f);
             oids.put(f, oId);
             final RevCommit commit = remoteGeogit.geogit.command(CommitOp.class)
-                    .setMessage(f.getIdentifier().toString()).call();
+                    .setMessage(f.getId()).call();
             expected.addFirst(commit);
             Optional<RevObject> childObject = remoteGeogit.geogit.command(RevObjectParse.class)
                     .setObjectId(oId).call();

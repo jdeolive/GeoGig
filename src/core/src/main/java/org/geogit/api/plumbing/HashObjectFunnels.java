@@ -28,12 +28,9 @@ import org.geogit.api.RevPerson;
 import org.geogit.api.RevTag;
 import org.geogit.api.RevTree;
 import org.geogit.storage.FieldType;
-import org.geotools.referencing.CRS;
-import org.opengis.feature.type.GeometryDescriptor;
+import org.jeo.feature.Field;
 import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyDescriptor;
-import org.opengis.feature.type.PropertyType;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -221,13 +218,13 @@ class HashObjectFunnels {
         public void funnel(RevFeatureType from, PrimitiveSink into) {
             RevObjectTypeFunnel.funnel(TYPE.FEATURETYPE, into);
 
-            ImmutableSet<PropertyDescriptor> featureTypeProperties = new DescribeFeatureType()
+            ImmutableSet<Field> featureTypeProperties = new DescribeFeatureType()
                     .setFeatureType(from).call();
 
             NullableStringFunnel.funnel(from.getName().getNamespaceURI(), into);
             Funnels.stringFunnel().funnel(from.getName().getLocalPart(), into);
 
-            for (PropertyDescriptor descriptor : featureTypeProperties) {
+            for (Field descriptor : featureTypeProperties) {
                 PropertyDescriptorFunnel.funnel(descriptor, into);
             }
         }
@@ -368,31 +365,29 @@ class HashObjectFunnels {
         }
     };
 
-    private static final Funnel<PropertyDescriptor> PropertyDescriptorFunnel = new Funnel<PropertyDescriptor>() {
-        private static final long serialVersionUID = 1L;
+    private static final Funnel<Field> PropertyDescriptorFunnel = new Funnel<Field>() {
+        private static final long serialVersionUID = 2L;
 
         @Override
-        public void funnel(PropertyDescriptor descriptor, PrimitiveSink into) {
-            NameFunnel.funnel(descriptor.getName(), into);
+        public void funnel(Field descriptor, PrimitiveSink into) {
+            NameFunnel.funnel(new Name(descriptor.getName()), into);
 
-            PropertyType attrType = descriptor.getType();
-            NameFunnel.funnel(attrType.getName(), into);
+            NameFunnel.funnel(new Name(descriptor.getName()), into);
 
-            FieldType type = FieldType.forBinding(attrType.getBinding());
+            FieldType type = FieldType.forBinding(descriptor.getType());
             into.putInt(type.getTextTag());
-            into.putBoolean(descriptor.isNillable());
+            into.putBoolean(true);
 
-            into.putInt(descriptor.getMaxOccurs());
-            into.putInt(descriptor.getMinOccurs());
+            into.putInt(1);
+            into.putInt(1);
 
-            if (descriptor instanceof GeometryDescriptor) {
-                CoordinateReferenceSystem crs;
-                crs = ((GeometryDescriptor) descriptor).getCoordinateReferenceSystem();
+            if (descriptor.isGeometry()) {
+                CoordinateReferenceSystem crs = descriptor.getCRS();
                 String srsName;
                 if (crs == null) {
                     srsName = "urn:ogc:def:crs:EPSG::0";
                 } else {
-                    srsName = CRS.toSRS(crs);
+                    srsName = crs.getName();
                 }
                 NullableStringFunnel.funnel(srsName, into);
             }

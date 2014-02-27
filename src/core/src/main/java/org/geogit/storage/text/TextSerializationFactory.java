@@ -39,18 +39,12 @@ import org.geogit.storage.FieldType;
 import org.geogit.storage.ObjectReader;
 import org.geogit.storage.ObjectSerializingFactory;
 import org.geogit.storage.ObjectWriter;
-import org.geotools.feature.NameImpl;
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.AttributeType;
-import org.opengis.feature.type.FeatureTypeFactory;
-import org.opengis.feature.type.GeometryType;
-import org.opengis.feature.type.PropertyDescriptor;
-import org.opengis.feature.type.PropertyType;
-import org.opengis.filter.Filter;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.util.InternationalString;
+
+import org.jeo.feature.Field;
+import org.jeo.feature.Schema;
+import org.jeo.feature.SchemaBuilder;
+import org.jeo.proj.Proj;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -382,28 +376,26 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
         @Override
         protected void print(RevFeatureType featureType, Writer w) throws IOException {
             println(w, "name\t", featureType.getName().toString());
-            Collection<PropertyDescriptor> attribs = featureType.type().getDescriptors();
-            for (PropertyDescriptor attrib : attribs) {
+            Collection<Field> attribs = featureType.type().getFields();
+            for (Field attrib : attribs) {
                 printAttributeDescriptor(w, attrib);
             }
             w.flush();
         }
 
-        private void printAttributeDescriptor(Writer w, PropertyDescriptor attrib)
-                throws IOException {
+        private void printAttributeDescriptor(Writer w, Field attrib) throws IOException {
             print(w, attrib.getName().toString());
             print(w, "\t");
-            print(w, FieldType.forBinding(attrib.getType().getBinding()).name());
+            print(w, FieldType.forBinding(attrib.getType()).name());
             print(w, "\t");
-            print(w, Integer.toString(attrib.getMinOccurs()));
+            print(w, "1");
             print(w, "\t");
-            print(w, Integer.toString(attrib.getMaxOccurs()));
+            print(w, "1");
             print(w, "\t");
-            print(w, Boolean.toString(attrib.isNillable()));
-            PropertyType attrType = attrib.getType();
-            if (attrType instanceof GeometryType) {
-                GeometryType gt = (GeometryType) attrType;
-                CoordinateReferenceSystem crs = gt.getCoordinateReferenceSystem();
+            print(w, "true");
+
+            if (attrib.isGeometry()) {
+                CoordinateReferenceSystem crs = attrib.getCRS();
                 String crsText = CrsTextSerializer.serialize(crs);
                 print(w, "\t");
                 println(w, crsText);
@@ -753,42 +745,37 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
      */
     private static final TextReader<RevFeatureType> FEATURETYPE_READER = new TextReader<RevFeatureType>() {
 
-        private SimpleFeatureTypeBuilder builder;
-
-        private FeatureTypeFactory typeFactory;
-
         @Override
         protected RevFeatureType read(ObjectId id, BufferedReader reader, TYPE type)
                 throws IOException {
             Preconditions.checkArgument(TYPE.FEATURETYPE.equals(type), "Wrong type: %s",
                     type.name());
-            builder = new SimpleFeatureTypeBuilder();
-            typeFactory = builder.getFeatureTypeFactory();
+            
             String name = parseLine(requireLine(reader), "name");
-            SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
+            SchemaBuilder builder;
             if (name.contains(":")) {
                 int idx = name.lastIndexOf(':');
                 String namespace = name.substring(0, idx);
                 String local = name.substring(idx + 1);
-                builder.setName(new NameImpl(namespace, local));
+                builder = new SchemaBuilder(local).uri(namespace);
             } else {
-                builder.setName(new NameImpl(name));
+                builder = new SchemaBuilder(name);
             }
 
             String line;
             while ((line = reader.readLine()) != null) {
-                builder.add(parseAttributeDescriptor(line));
+                builder.field(parseAttributeDescriptor(line));
             }
-            SimpleFeatureType sft = builder.buildFeatureType();
+            Schema sft = builder.schema();
             return RevFeatureType.build(sft);
 
         }
 
-        private AttributeDescriptor parseAttributeDescriptor(String line) {
+        private Field parseAttributeDescriptor(String line) {
             ArrayList<String> tokens = Lists.newArrayList(Splitter.on('\t').split(line));
             Preconditions.checkArgument(tokens.size() == 5 || tokens.size() == 6,
                     "Wrong attribute definition: %s", line);
-            NameImpl name = new NameImpl(tokens.get(0));
+            String name = tokens.get(0);
             Class<?> type;
             try {
                 type = FieldType.valueOf(tokens.get(1)).getBinding();
@@ -799,31 +786,14 @@ public class TextSerializationFactory implements ObjectSerializingFactory {
             int max = Integer.parseInt(tokens.get(3));
             boolean nillable = Boolean.parseBoolean(tokens.get(4));
 
-            /*
-             * Default values that are currently not encoded.
-             */
-            boolean isIdentifiable = false;
-            boolean isAbstract = false;
-            List<Filter> restrictions = null;
-            AttributeType superType = null;
-            InternationalString description = null;
-            Object defaultValue = null;
-
-            AttributeType attributeType;
-            AttributeDescriptor attributeDescriptor;
+            Field attributeDescriptor;
             if (Geometry.class.isAssignableFrom(type)) {
                 String crsText = tokens.get(5);
                 CoordinateReferenceSystem crs = CrsTextSerializer.deserialize(crsText);
 
-                attributeType = typeFactory.createGeometryType(name, type, crs, isIdentifiable,
-                        isAbstract, restrictions, superType, description);
-                attributeDescriptor = typeFactory.createGeometryDescriptor(
-                        (GeometryType) attributeType, name, min, max, nillable, defaultValue);
+                attributeDescriptor = new Field(name, type, crs);
             } else {
-                attributeType = typeFactory.createAttributeType(name, type, isIdentifiable,
-                        isAbstract, restrictions, superType, description);
-                attributeDescriptor = typeFactory.createAttributeDescriptor(attributeType, name,
-                        min, max, nillable, defaultValue);
+                attributeDescriptor = new Field(name, type);
             }
             return attributeDescriptor;
         }

@@ -18,8 +18,8 @@ import org.geogit.api.RevObject;
 import org.geogit.api.RevObject.TYPE;
 import org.geogit.storage.ObjectWriter;
 import org.geogit.storage.text.TextSerializationFactory;
-import org.opengis.feature.Feature;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -251,17 +251,17 @@ public class Patch {
                 && !diff.getOldFeatureType().equals(ObjectId.NULL)) {
             RevFeatureType oldFeatureType = getFeatureTypeFromId(diff.getOldFeatureType()).get();
             RevFeatureType newFeatureType = getFeatureTypeFromId(diff.getNewFeatureType()).get();
-            ImmutableList<PropertyDescriptor> oldDescriptors = oldFeatureType.sortedDescriptors();
-            ImmutableList<PropertyDescriptor> newDescriptors = newFeatureType.sortedDescriptors();
+            ImmutableList<Field> oldDescriptors = oldFeatureType.sortedDescriptors();
+            ImmutableList<Field> newDescriptors = newFeatureType.sortedDescriptors();
             BitSet updatedDescriptors = new BitSet(newDescriptors.size());
             for (int i = 0; i < oldDescriptors.size(); i++) {
-                PropertyDescriptor oldDescriptor = oldDescriptors.get(i);
+                Field oldDescriptor = oldDescriptors.get(i);
                 int idx = newDescriptors.indexOf(oldDescriptor);
                 if (idx != -1) {
                     updatedDescriptors.set(idx);
                 } else {
-                    Class<?> oldType = oldDescriptor.getType().getBinding();
-                    sb.append("R\t" + oldDescriptors.get(i).getName().getLocalPart() + "["
+                    Class<?> oldType = oldDescriptor.getType();
+                    sb.append("R\t" + oldDescriptors.get(i).getName() + "["
                             + oldType.getName() + "]");
                 }
 
@@ -269,9 +269,9 @@ public class Patch {
             updatedDescriptors.flip(0, updatedDescriptors.length());
             for (int i = updatedDescriptors.nextSetBit(0); i >= 0; i = updatedDescriptors
                     .nextSetBit(i + 1)) {
-                PropertyDescriptor newDescriptor = newDescriptors.get(i);
-                Class<?> oldType = newDescriptor.getType().getBinding();
-                sb.append("A\t" + newDescriptors.get(i).getName().getLocalPart() + "["
+                Field newDescriptor = newDescriptors.get(i);
+                Class<?> oldType = newDescriptor.getType();
+                sb.append("A\t" + newDescriptors.get(i).getName() + "["
                         + oldType.getName() + "]");
             }
         }

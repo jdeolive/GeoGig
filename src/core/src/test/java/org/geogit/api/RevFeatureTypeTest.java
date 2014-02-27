@@ -7,8 +7,9 @@ package org.geogit.api;
 import java.util.ArrayList;
 
 import org.geogit.test.integration.RepositoryTestCase;
+import org.jeo.feature.Field;
 import org.junit.Test;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.opengis.feature.type.Name;
 
 import com.google.common.collect.Lists;
 
@@ -28,9 +29,9 @@ public class RevFeatureTypeTest extends RepositoryTestCase {
 
         assertEquals(linesType, featureType.type());
 
-        assertEquals(linesType.getName(), featureType.getName());
+        assertEquals(new Name(linesType.getURI(), linesType.getName()), featureType.getName());
 
-        ArrayList<PropertyDescriptor> descriptors = Lists.newArrayList(linesType.getDescriptors());
+        ArrayList<Field> descriptors = Lists.newArrayList(linesType.getFields());
         // Collections.sort(descriptors, RevFeatureType.PROPERTY_ORDER);
         assertEquals(descriptors, featureType.sortedDescriptors());
     }

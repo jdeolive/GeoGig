@@ -1,19 +1,13 @@
 package org.geogit.repository;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
-import org.geotools.filter.identity.FeatureIdImpl;
-import org.opengis.feature.Feature;
-import org.opengis.feature.GeometryAttribute;
-import org.opengis.feature.IllegalAttributeException;
-import org.opengis.feature.Property;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.feature.type.Name;
-import org.opengis.filter.identity.FeatureId;
-import org.opengis.geometry.BoundingBox;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
+
+import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * An object representing a feature to be deleted. When this is inserted into the working tree of a
@@ -22,9 +16,9 @@ import org.opengis.geometry.BoundingBox;
  */
 public class FeatureToDelete implements Feature {
 
-    private FeatureId fid;
+    private String fid;
 
-    private SimpleFeatureType type;
+    private Schema type;
 
     /**
      * Constructs a new feature to be deleted
@@ -33,18 +27,18 @@ public class FeatureToDelete implements Feature {
      * @param name the name of the feature
      * 
      */
-    public FeatureToDelete(SimpleFeatureType ft, String name) {
-        this.fid = new FeatureIdImpl(name);
+    public FeatureToDelete(Schema ft, String name) {
+        this.fid = name;
         this.type = ft;
     }
 
     @Override
-    public FeatureId getIdentifier() {
+    public String getId() {
         return fid;
     }
 
     @Override
-    public FeatureType getType() {
+    public Schema schema() {
         return type;
     }
 
@@ -52,7 +46,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Collection<Property> getProperties() {
+    public CoordinateReferenceSystem getCRS() {
         throw new UnsupportedOperationException();
     }
 
@@ -60,7 +54,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Collection<Property> getProperties(Name arg0) {
+    public void setCRS(CoordinateReferenceSystem crs) {
         throw new UnsupportedOperationException();
     }
 
@@ -68,7 +62,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Collection<Property> getProperties(String arg0) {
+    public CoordinateReferenceSystem crs() {
         throw new UnsupportedOperationException();
     }
 
@@ -76,7 +70,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Property getProperty(Name arg0) {
+    public Object get(String key) {
         throw new UnsupportedOperationException();
     }
 
@@ -84,7 +78,16 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Property getProperty(String arg0) {
+    public Object get(int index) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /**
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public Geometry geometry() {
         throw new UnsupportedOperationException();
     }
 
@@ -92,7 +95,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Collection<? extends Property> getValue() {
+    public void put(String key, Object val) {
         throw new UnsupportedOperationException();
     }
 
@@ -100,7 +103,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public void setValue(Collection<Property> arg0) {
+    public void set(int index, Object val) {
         throw new UnsupportedOperationException();
     }
 
@@ -108,7 +111,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public void validate() throws IllegalAttributeException {
+    public void put(Geometry g) {
         throw new UnsupportedOperationException();
     }
 
@@ -116,7 +119,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public AttributeDescriptor getDescriptor() {
+    public List<Object> list() {
         throw new UnsupportedOperationException();
     }
 
@@ -124,56 +127,7 @@ public class FeatureToDelete implements Feature {
      * @throws UnsupportedOperationException
      */
     @Override
-    public Name getName() {
+    public Map<String, Object> map() {
         throw new UnsupportedOperationException();
     }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public Map<Object, Object> getUserData() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public boolean isNillable() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public void setValue(Object arg0) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public BoundingBox getBounds() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public GeometryAttribute getDefaultGeometryProperty() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public void setDefaultGeometryProperty(GeometryAttribute arg0) {
-        throw new UnsupportedOperationException();
-    }
-
 }

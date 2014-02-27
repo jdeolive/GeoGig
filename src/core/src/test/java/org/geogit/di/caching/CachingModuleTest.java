@@ -32,11 +32,9 @@ import org.geogit.storage.fs.IniFileConfigDatabase;
 import org.geogit.storage.memory.HeapObjectDatabse;
 import org.geogit.storage.memory.HeapStagingDatabase;
 import org.geogit.test.integration.RepositoryTestCase;
-import org.geotools.data.DataUtilities;
-import org.geotools.feature.SchemaException;
+import org.jeo.feature.Schema;
 import org.junit.Before;
 import org.junit.Test;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
@@ -116,12 +114,7 @@ public class CachingModuleTest {
     }
 
     private static RevFeatureType ft(String name) {
-        SimpleFeatureType type;
-        try {
-            type = DataUtilities.createType("", name, RepositoryTestCase.pointsTypeSpec);
-        } catch (SchemaException e) {
-            throw Throwables.propagate(e);
-        }
+        Schema type = Schema.build(name).fields(RepositoryTestCase.pointsTypeSpec).schema();
         RevFeatureType rft = RevFeatureType.build(type);
         return rft;
     }

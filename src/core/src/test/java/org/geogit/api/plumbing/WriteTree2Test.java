@@ -31,8 +31,8 @@ import org.geogit.api.plumbing.diff.MutableTree;
 import org.geogit.storage.ObjectDatabase;
 import org.geogit.storage.StagingDatabase;
 import org.geogit.test.integration.RepositoryTestCase;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
 
 import com.google.common.base.Function;
 import com.google.common.base.Strings;

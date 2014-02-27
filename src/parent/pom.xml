@@ -136,6 +136,7 @@
     <gs.version>2.3.0</gs.version>
     <gson.version>2.2.2</gson.version>
     <gt.version>10.5</gt.version>
+    <jeo.version>0-SNAPSHOT</jeo.version>
     <guava.version>14.0.1</guava.version>
     <guice.version>3.0</guice.version>
     <ini4j.version>0.5.2</ini4j.version>
@@ -215,6 +216,11 @@
             <artifactId>jdom</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jeo</groupId>
+        <artifactId>jeo</artifactId>
+        <version>${jeo.version}</version>
       </dependency>
       <dependency>
         <groupId>org.geoserver</groupId>

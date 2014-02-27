@@ -21,7 +21,7 @@ import org.geogit.api.RevObject;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.repository.DepthSearch;
 import org.geogit.repository.WorkingTree;
-import org.opengis.feature.type.PropertyDescriptor;
+import org.jeo.feature.Field;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -103,14 +103,14 @@ public class VerifyPatchOp extends AbstractGeoGitOp<VerifyPatchResults> {
             Optional<NodeRef> noderef = depthSearch.find(getWorkTree().getTree(), path);
             RevFeatureType featureType = command(RevObjectParse.class)
                     .setObjectId(noderef.get().getMetadataId()).call(RevFeatureType.class).get();
-            ImmutableList<PropertyDescriptor> descriptors = featureType.sortedDescriptors();
-            Set<Entry<PropertyDescriptor, AttributeDiff>> attrDiffs = diff.getDiffs().entrySet();
+            ImmutableList<Field> descriptors = featureType.sortedDescriptors();
+            Set<Entry<Field, AttributeDiff>> attrDiffs = diff.getDiffs().entrySet();
             boolean ok = true;
-            for (Iterator<Entry<PropertyDescriptor, AttributeDiff>> iterator = attrDiffs.iterator(); iterator
+            for (Iterator<Entry<Field, AttributeDiff>> iterator = attrDiffs.iterator(); iterator
                     .hasNext();) {
-                Entry<PropertyDescriptor, AttributeDiff> entry = iterator.next();
+                Entry<Field, AttributeDiff> entry = iterator.next();
                 AttributeDiff attrDiff = entry.getValue();
-                PropertyDescriptor descriptor = entry.getKey();
+                Field descriptor = entry.getKey();
                 switch (attrDiff.getType()) {
                 case ADDED:
                     if (descriptors.contains(descriptor)) {

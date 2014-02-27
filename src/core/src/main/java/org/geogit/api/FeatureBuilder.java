@@ -7,11 +7,8 @@ package org.geogit.api;
 
 import java.util.Map;
 
-import org.geotools.filter.identity.FeatureIdVersionedImpl;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.FeatureType;
-import org.opengis.filter.identity.FeatureId;
+import org.jeo.feature.Feature;
+import org.jeo.feature.Schema;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -28,7 +25,7 @@ import com.google.common.collect.ImmutableList;
  */
 public class FeatureBuilder {
 
-    private FeatureType featureType;
+    private Schema featureType;
 
     private Map<String, Integer> attNameToRevTypeIndex;
 
@@ -58,7 +55,7 @@ public class FeatureBuilder {
      * 
      * @param type the feature type of the features that will be built
      */
-    public FeatureBuilder(SimpleFeatureType type) {
+    public FeatureBuilder(Schema type) {
         this(RevFeatureType.build(type));
     }
 
@@ -74,11 +71,10 @@ public class FeatureBuilder {
         Preconditions.checkNotNull(revFeature);
 
         final String version = revFeature.getId().toString();
-        final FeatureId fid = new FeatureIdVersionedImpl(id, version);
-
+        
         ImmutableList<Optional<Object>> values = revFeature.getValues();
         GeogitSimpleFeature feature = new GeogitSimpleFeature(values,
-                (SimpleFeatureType) featureType, fid, attNameToRevTypeIndex, typeToRevTypeIndex);
+            featureType, id, version, attNameToRevTypeIndex, typeToRevTypeIndex);
         return feature;
     }
 

@@ -16,9 +16,8 @@ import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.CreatePatchOp;
 import org.geogit.api.porcelain.DiffOp;
 import org.geogit.repository.WorkingTree;
+import org.jeo.feature.Feature;
 import org.junit.Test;
-import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 public class CreatePatchOpTest extends RepositoryTestCase {
 
@@ -31,8 +30,8 @@ public class CreatePatchOpTest extends RepositoryTestCase {
         insertAndAdd(points1, points2);
         geogit.command(CommitOp.class).setAll(true).call();
 
-        final String featureId = points1.getIdentifier().getID();
-        final Feature modifiedFeature = feature((SimpleFeatureType) points1.getType(), featureId,
+        final String featureId = points1.getId();
+        final Feature modifiedFeature = feature(points1.schema(), featureId,
                 "changedProp", new Integer(1500), "POINT (2 2)");
         insert(modifiedFeature);
         insert(points3);
@@ -58,8 +57,8 @@ public class CreatePatchOpTest extends RepositoryTestCase {
         insertAndAdd(points1, points2);
         geogit.command(CommitOp.class).setAll(true).call();
 
-        final String featureId = points1.getIdentifier().getID();
-        final Feature modifiedFeature = feature((SimpleFeatureType) points1.getType(), featureId,
+        final String featureId = points1.getId();
+        final Feature modifiedFeature = feature( points1.schema(), featureId,
                 "changedProp", new Integer(1500), null);
 
         insertAndAdd(modifiedFeature);

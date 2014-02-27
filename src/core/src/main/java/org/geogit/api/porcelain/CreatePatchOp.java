@@ -21,7 +21,7 @@ import org.geogit.api.plumbing.diff.DiffEntry;
 import org.geogit.api.plumbing.diff.DiffEntry.ChangeType;
 import org.geogit.api.plumbing.diff.FeatureDiff;
 import org.geogit.api.plumbing.diff.Patch;
-import org.opengis.feature.Feature;
+import org.jeo.feature.Feature;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Maps;
