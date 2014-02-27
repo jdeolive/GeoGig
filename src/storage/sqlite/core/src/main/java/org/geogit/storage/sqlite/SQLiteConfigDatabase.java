@@ -137,17 +137,18 @@ public abstract class SQLiteConfigDatabase implements ConfigDatabase {
 
     Config local() {
         if (local == null || !lastWorkingDir.equals(platform.pwd())) {
-            final URL url = new ResolveGeogitDir(platform).call();
+            final Optional<URL> url = new ResolveGeogitDir(platform).call();
 
-            if (url == null) {
+            if (!url.isPresent()) {
                 throw new ConfigException(StatusCode.INVALID_LOCATION);
             }
 
+            URL u = url.get();
             File localFile;
             try {
-                localFile = new File(new File(url.toURI()), "config.db");
+                localFile = new File(new File(u.toURI()), "config.db");
             } catch (URISyntaxException e) {
-                localFile = new File(url.getPath(), "config.db");
+                localFile = new File(u.getPath(), "config.db");
             }
 
             lastWorkingDir = platform.pwd();

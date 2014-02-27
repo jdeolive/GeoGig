@@ -5,14 +5,11 @@
 package org.geogit.storage.sqlite;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.List;
 import java.util.Queue;
 
 import org.geogit.api.ObjectId;
 import org.geogit.api.Platform;
-import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.repository.RepositoryConnectionException;
 import org.geogit.storage.ConfigDatabase;
 import org.geogit.storage.GraphDatabase;
@@ -46,12 +43,7 @@ public abstract class SQLiteGraphDatabase<T> implements GraphDatabase {
     @Override
     public void open() {
         if (cx == null) {
-            URL geogitDir = new ResolveGeogitDir(platform).call();
-            try {
-                cx = connect(new File(geogitDir.toURI()));
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("error resolving .geogit dir", e);
-            }
+            cx = connect(SQLiteStorage.geogitDir(platform));
             init(cx);
         }
     }
