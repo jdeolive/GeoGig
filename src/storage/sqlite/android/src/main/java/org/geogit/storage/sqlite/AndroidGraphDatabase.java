@@ -51,13 +51,13 @@ public class AndroidGraphDatabase extends SQLiteGraphDatabase<SQLiteDatabase> {
     protected void init(SQLiteDatabase cx) {
         cx.beginTransaction();
 
-        String sql = format("CREATE TABLE IF NOT EXISTS %s (id VARCHAR)", NODES);
+        String sql = format("CREATE TABLE IF NOT EXISTS %s (id VARCHAR PRIMARY KEY)", NODES);
         cx.execSQL(log(sql, LOG));
 
         sql = format("CREATE INDEX IF NOT EXISTS %s_id_index ON %s(id)", NODES, NODES);
         cx.execSQL(log(sql, LOG));
 
-        sql = format("CREATE TABLE IF NOT EXISTS %s (src VARCHAR, dst VARCHAR)", EDGES);
+        sql = format("CREATE TABLE IF NOT EXISTS %s (src VARCHAR, dst VARCHAR, PRIMARY KEY (src,dst))", EDGES);
         cx.execSQL(log(sql, LOG));
 
         sql = format("CREATE INDEX IF NOT EXISTS %s_src_index ON %s(src)", EDGES, EDGES);
@@ -66,13 +66,13 @@ public class AndroidGraphDatabase extends SQLiteGraphDatabase<SQLiteDatabase> {
         sql = format("CREATE INDEX IF NOT EXISTS %s_dst_index ON %s(dst)", EDGES, EDGES);
         cx.execSQL(log(sql, LOG));
 
-        sql = format("CREATE TABLE IF NOT EXISTS %s (nid VARCHAR, key VARCHAR, val VARCHAR)", PROPS);
+        sql = format("CREATE TABLE IF NOT EXISTS %s (nid VARCHAR, key VARCHAR, val VARCHAR, PRIMARY KEY(nid,key))", PROPS);
         cx.execSQL(log(sql, LOG));
 
         sql = format("CREATE INDEX IF NOT EXISTS %s_nid_key_index ON %s(nid, key)", PROPS, PROPS);
         cx.execSQL(log(sql, LOG));
 
-        sql = format("CREATE TABLE IF NOT EXISTS %s (alias VARCHAR, nid VARCHAR)", MAPPINGS);
+        sql = format("CREATE TABLE IF NOT EXISTS %s (alias VARCHAR PRIMARY KEY, nid VARCHAR)", MAPPINGS);
         cx.execSQL(log(sql, LOG));
 
         sql = format("CREATE INDEX IF NOT EXISTS %s_alias_index ON %s(alias)", MAPPINGS, MAPPINGS);

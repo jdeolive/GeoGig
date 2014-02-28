@@ -56,7 +56,7 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
 
     @Override
     protected SQLiteDatabase connect(File geogitDir) {
-        File file = new File(geogitDir, OBJECTS + ".db");
+        File file = new File(geogitDir, dbname + ".db");
         return SQLiteDatabase.openOrCreateDatabase(file, null);
     }
 
@@ -69,7 +69,7 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
     protected void init(SQLiteDatabase cx) {
         cx.beginTransaction();
 
-        String sql = format("CREATE TABLE IF NOT EXISTS %s (id varchar, object blob)", OBJECTS);
+        String sql = format("CREATE TABLE IF NOT EXISTS %s (id varchar PRIMARY KEY, object blob)", OBJECTS);
         cx.execSQL(log(sql, LOG));
 
         sql = format("CREATE INDEX IF NOT EXISTS %s_id_index ON %s (id)", OBJECTS, OBJECTS);
@@ -121,9 +121,11 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
         // JD: Since (for now) we can't support dynamic method interceptors we have to do the job
         // of ObjectDatabasePutInterceptor manually
         if (super.put(object)) {
-            if (RevObject.TYPE.COMMIT.equals(object.getType())) {
-                RevCommit commit = (RevCommit) object;
-                graphdb.put(commit.getId(), commit.getParentIds());
+            if (graphdb != null) {
+                if (RevObject.TYPE.COMMIT.equals(object.getType())) {
+                    RevCommit commit = (RevCommit) object;
+                    graphdb.put(commit.getId(), commit.getParentIds());
+                }
             }
             return true;
         }

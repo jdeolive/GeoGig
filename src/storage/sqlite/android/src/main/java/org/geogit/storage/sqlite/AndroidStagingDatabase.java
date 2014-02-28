@@ -23,16 +23,15 @@ public class AndroidStagingDatabase extends SQLiteStagingDatabase<SQLiteDatabase
     final static String CONFLICTS = "conflicts";
     
     @Inject
-    public AndroidStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, 
-        GraphDatabase graphdb, Platform platform) {
-        super(repoDb, new AndroidObjectDatabase(configdb, graphdb, platform, "stage"), configdb,
+    public AndroidStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, Platform platform) {
+        super(repoDb, new AndroidObjectDatabase(configdb, null, platform, "stage"), configdb,
             platform);
     }
 
     @Override
     protected void init(SQLiteDatabase cx) {
         String sql = format("CREATE TABLE IF NOT EXISTS %s (namespace VARCHAR, "
-                + "path VARCHAR, conflict VARCHAR)", CONFLICTS);
+                + "path VARCHAR, conflict VARCHAR, PRIMARY KEY(namespace,path))", CONFLICTS);
         cx.execSQL(log(sql, LOG));
     }
 
