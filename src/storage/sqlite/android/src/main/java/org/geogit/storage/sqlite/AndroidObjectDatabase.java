@@ -14,7 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.geogit.api.Platform;
+import org.geogit.api.RevCommit;
+import org.geogit.api.RevObject;
 import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.GraphDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +40,17 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
     static Logger LOG = LoggerFactory.getLogger(AndroidObjectDatabase.class);
 
     final String dbname;
+    final GraphDatabase graphdb;
 
     @Inject
-    public AndroidObjectDatabase(ConfigDatabase configdb, Platform platform) {
-        this(configdb, platform, OBJECTS);
+    public AndroidObjectDatabase(ConfigDatabase configdb, GraphDatabase graphdb, Platform platform) {
+        this(configdb, graphdb, platform, OBJECTS);
     }
 
-    public AndroidObjectDatabase(ConfigDatabase configdb, Platform platform, String dbname) {
+    public AndroidObjectDatabase(ConfigDatabase configdb, GraphDatabase graphdb, Platform platform,
+        String dbname) {
         super(configdb, platform);
+        this.graphdb = graphdb;
         this.dbname = dbname;
     }
 
@@ -108,6 +114,20 @@ public class AndroidObjectDatabase extends SQLiteObjectDatabase<SQLiteDatabase> 
         } finally {
             c.close();
         }
+    }
+
+    @Override
+    public boolean put(RevObject object) {
+        // JD: Since (for now) we can't support dynamic method interceptors we have to do the job
+        // of ObjectDatabasePutInterceptor manually
+        if (super.put(object)) {
+            if (RevObject.TYPE.COMMIT.equals(object.getType())) {
+                RevCommit commit = (RevCommit) object;
+                graphdb.put(commit.getId(), commit.getParentIds());
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override

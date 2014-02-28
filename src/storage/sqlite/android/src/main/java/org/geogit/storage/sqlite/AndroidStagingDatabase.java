@@ -2,6 +2,7 @@ package org.geogit.storage.sqlite;
 
 import org.geogit.api.Platform;
 import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.GraphDatabase;
 import org.geogit.storage.ObjectDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,10 @@ public class AndroidStagingDatabase extends SQLiteStagingDatabase<SQLiteDatabase
     final static String CONFLICTS = "conflicts";
     
     @Inject
-    public AndroidStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, Platform platform) {
-        super(repoDb, new AndroidObjectDatabase(configdb, platform, "stage"), configdb, platform);
+    public AndroidStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, 
+        GraphDatabase graphdb, Platform platform) {
+        super(repoDb, new AndroidObjectDatabase(configdb, graphdb, platform, "stage"), configdb,
+            platform);
     }
 
     @Override
