@@ -13,9 +13,6 @@ import java.net.InetAddress;
 import java.net.URL;
 
 import javax.annotation.Nullable;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 
 import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
@@ -23,6 +20,8 @@ import org.geogit.api.RevObject;
 import org.geogit.api.SymRef;
 import org.geogit.repository.Repository;
 import org.geogit.storage.datastream.ObjectReader;
+import org.jeo.json.JSONObject;
+import org.jeo.json.JSONValue;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -109,21 +108,18 @@ class HttpUtils {
     }
 
     /**
-     * Reads from the provided XML stream until an element with a name that matches the provided
-     * name is found.
-     * 
-     * @param reader the XML stream
-     * @param name the element name to search for
-     * @throws XMLStreamException
+     * Reads to json object at the specified path.
      */
-    public static void readToElementStart(XMLStreamReader reader, String name)
-            throws XMLStreamException {
-        while (reader.hasNext()) {
-            if (reader.isStartElement() && reader.getLocalName().equals(name)) {
-                break;
+    public static JSONObject readToObject(JSONObject obj, String... path) {
+        for (String p : path) {
+            if (obj == null) {
+                return null;
             }
-            reader.next();
+            if (obj != null) {
+                obj = ((JSONObject)obj.get(p));
+            }
         }
+        return obj;
     }
 
     /**
@@ -241,24 +237,16 @@ class HttpUtils {
 
             InputStream inputStream = connection.getInputStream();
 
-            XMLStreamReader reader = XMLInputFactory.newFactory()
-                    .createXMLStreamReader(inputStream);
-
+            //XMLStreamReader reader = XMLInputFactory.newFactory()
+            //        .createXMLStreamReader(inputStream);
+            JSONObject root = 
+                (JSONObject)JSONValue.parseWithException(new InputStreamReader(inputStream));
             try {
-                readToElementStart(reader, "ChangedRef");
+                JSONObject ref = readToObject(root, "ChangedRef");
+                final String refName = (String) ref.get("name");
+                final String objectId = (String) ref.get("objectId");
 
-                readToElementStart(reader, "name");
-                final String refName = reader.getElementText();
-
-                readToElementStart(reader, "objectId");
-                final String objectId = reader.getElementText();
-
-                readToElementStart(reader, "target");
-                String target = null;
-                if (reader.hasNext()) {
-                    target = reader.getElementText();
-                }
-                reader.close();
+                String target = (String) ref.get("target");
 
                 if (target != null) {
                     updatedRef = new SymRef(refName, new Ref(target, ObjectId.valueOf(objectId),
@@ -268,7 +256,6 @@ class HttpUtils {
                 }
 
             } finally {
-                reader.close();
                 inputStream.close();
             }
         } catch (Exception e) {
@@ -387,25 +374,14 @@ class HttpUtils {
 
             InputStream inputStream = connection.getInputStream();
 
-            XMLStreamReader reader = XMLInputFactory.newFactory()
-                    .createXMLStreamReader(inputStream);
-
             try {
-                HttpUtils.readToElementStart(reader, "Ref");
-                if (reader.hasNext()) {
-
-                    HttpUtils.readToElementStart(reader, "name");
-                    final String refName = reader.getElementText();
-
-                    HttpUtils.readToElementStart(reader, "objectId");
-                    final String objectId = reader.getElementText();
-
-                    HttpUtils.readToElementStart(reader, "target");
-                    String target = null;
-                    if (reader.hasNext()) {
-                        target = reader.getElementText();
-                    }
-                    reader.close();
+                JSONObject root = (JSONObject) 
+                    JSONValue.parseWithException(new InputStreamReader(inputStream));
+                JSONObject ref = readToObject(root, "response", "Ref");
+                if (ref != null) {
+                    final String refName = (String) ref.get("name");
+                    final String objectId = (String) ref.get("objectId");
+                    String target = (String) ref.get("target");
 
                     if (target != null) {
                         remoteRef = Optional.of((Ref) new SymRef(refName, new Ref(target, ObjectId
@@ -417,7 +393,6 @@ class HttpUtils {
                 }
 
             } finally {
-                reader.close();
                 inputStream.close();
             }
         } catch (Exception e) {
