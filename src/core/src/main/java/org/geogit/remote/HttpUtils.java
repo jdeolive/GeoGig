@@ -13,6 +13,8 @@ import java.net.InetAddress;
 import java.net.URL;
 
 import javax.annotation.Nullable;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
@@ -22,6 +24,9 @@ import org.geogit.repository.Repository;
 import org.geogit.storage.datastream.ObjectReader;
 import org.jeo.json.JSONObject;
 import org.jeo.json.JSONValue;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -219,7 +224,7 @@ class HttpUtils {
     public static Ref updateRemoteRef(URL repositoryURL, String refspec, ObjectId newValue,
             boolean delete) {
         HttpURLConnection connection = null;
-        Ref updatedRef = null;
+        Optional<Ref> updatedRef = Optional.absent();
         try {
             String expanded;
             if (!delete) {
@@ -233,27 +238,13 @@ class HttpUtils {
             connection.setRequestMethod("GET");
 
             connection.setUseCaches(false);
-            connection.setDoOutput(true);
+            connection.connect();
 
             InputStream inputStream = connection.getInputStream();
 
-            //XMLStreamReader reader = XMLInputFactory.newFactory()
-            //        .createXMLStreamReader(inputStream);
-            JSONObject root = 
-                (JSONObject)JSONValue.parseWithException(new InputStreamReader(inputStream));
             try {
-                JSONObject ref = readToObject(root, "ChangedRef");
-                final String refName = (String) ref.get("name");
-                final String objectId = (String) ref.get("objectId");
-
-                String target = (String) ref.get("target");
-
-                if (target != null) {
-                    updatedRef = new SymRef(refName, new Ref(target, ObjectId.valueOf(objectId),
-                            RevObject.TYPE.COMMIT));
-                } else {
-                    updatedRef = new Ref(refName, ObjectId.valueOf(objectId), RevObject.TYPE.COMMIT);
-                }
+                updatedRef = isXML(connection) ? 
+                    parseRefXML(inputStream, "ChangedRef") : parseRefJSON(inputStream, "ChangedRef");
 
             } finally {
                 inputStream.close();
@@ -263,7 +254,7 @@ class HttpUtils {
         } finally {
             consumeErrStreamAndCloseConnection(connection);
         }
-        return updatedRef;
+        return updatedRef.or((Ref)null);
     }
 
     /**
@@ -370,28 +361,13 @@ class HttpUtils {
             connection.setRequestMethod("GET");
 
             connection.setUseCaches(false);
-            connection.setDoOutput(true);
+            connection.connect();
 
             InputStream inputStream = connection.getInputStream();
 
             try {
-                JSONObject root = (JSONObject) 
-                    JSONValue.parseWithException(new InputStreamReader(inputStream));
-                JSONObject ref = readToObject(root, "response", "Ref");
-                if (ref != null) {
-                    final String refName = (String) ref.get("name");
-                    final String objectId = (String) ref.get("objectId");
-                    String target = (String) ref.get("target");
-
-                    if (target != null) {
-                        remoteRef = Optional.of((Ref) new SymRef(refName, new Ref(target, ObjectId
-                                .valueOf(objectId), RevObject.TYPE.COMMIT)));
-                    } else {
-                        remoteRef = Optional.of(new Ref(refName, ObjectId.valueOf(objectId),
-                                RevObject.TYPE.COMMIT));
-                    }
-                }
-
+                remoteRef = isXML(connection) ? 
+                    parseRefXML(inputStream, "Ref") : parseRefJSON(inputStream, "Ref");
             } finally {
                 inputStream.close();
             }
@@ -401,6 +377,60 @@ class HttpUtils {
             HttpUtils.consumeErrStreamAndCloseConnection(connection);
         }
         return remoteRef;
+    }
+
+    static boolean isXML(HttpURLConnection connection) {
+        return connection.getHeaderField("content-type").contains("application/xml");
+    }
+
+    static Optional<Ref> parseRefXML(InputStream inputStream, String root) throws Exception {
+        DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document doc = db.parse(inputStream);
+
+        Element ref = doc.getDocumentElement();
+        if (root.equalsIgnoreCase(ref.getNodeName())) {
+            NodeList nameEls = ref.getElementsByTagName("name");
+            NodeList objIdEls = ref.getElementsByTagName("objectId");
+            NodeList targetEls = ref.getElementsByTagName("target");
+
+            final String refName = nameEls.getLength() > 0 ? 
+                ((Element)nameEls.item(0)).getTextContent() : null;
+            final String objectId = objIdEls.getLength() > 0 ? 
+                ((Element)objIdEls.item(0)).getTextContent() : null;
+            String target = targetEls.getLength() > 0 ? 
+                ((Element)targetEls.item(0)).getTextContent() : null;
+
+            if (target != null) {
+                return Optional.of((Ref) new SymRef(refName, new Ref(target, ObjectId
+                        .valueOf(objectId), RevObject.TYPE.COMMIT)));
+            } else {
+                return Optional.of(new Ref(refName, ObjectId.valueOf(objectId),
+                        RevObject.TYPE.COMMIT));
+            }
+        }
+        return Optional.absent();
+    }
+
+    static Optional<Ref> parseRefJSON(InputStream inputStream, String name) throws Exception {
+        JSONObject root = (JSONObject) 
+                JSONValue.parseWithException(new InputStreamReader(inputStream));
+        JSONObject ref = readToObject(root, "response", name);
+        if (ref != null) {
+            final String refName = (String) ref.get("name");
+            final String objectId = (String) ref.get("objectId");
+            String target = (String) ref.get("target");
+
+            if (target != null) {
+                return Optional.of((Ref) new SymRef(refName, new Ref(target, ObjectId
+                        .valueOf(objectId), RevObject.TYPE.COMMIT)));
+            } else {
+                return Optional.of(new Ref(refName, ObjectId.valueOf(objectId),
+                        RevObject.TYPE.COMMIT));
+            }
+        }
+        else {
+            return Optional.absent();
+        }
     }
 
     /**
