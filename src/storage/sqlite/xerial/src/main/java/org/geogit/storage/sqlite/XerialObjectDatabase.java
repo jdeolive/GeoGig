@@ -22,9 +22,11 @@ import javax.sql.DataSource;
 
 import org.geogit.api.ObjectId;
 import org.geogit.api.Platform;
+import org.geogit.api.RevCommit;
 import org.geogit.api.RevObject;
 import org.geogit.storage.BulkOpListener;
 import org.geogit.storage.ConfigDatabase;
+import org.geogit.storage.GraphDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,13 +48,16 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<DataSource> {
 
     final String dbName;
 
+    final GraphDatabase graphdb;
+
     @Inject
-    public XerialObjectDatabase(ConfigDatabase configdb, Platform platform) {
-        this(configdb, platform, "objects");
+    public XerialObjectDatabase(ConfigDatabase configdb, GraphDatabase graphdb, Platform platform) {
+        this(configdb, graphdb, platform, "objects");
     }
 
-    public XerialObjectDatabase(ConfigDatabase configdb, Platform platform, String dbName) {
+    public XerialObjectDatabase(ConfigDatabase configdb, GraphDatabase graphdb, Platform platform, String dbName) {
         super(configdb, platform);
+        this.graphdb = graphdb;
         this.dbName = dbName;
         // File db = new File(new File(platform.pwd(), ".geogit"), name + ".db");
         // dataSource = Xerial.newDataSource(db);
@@ -135,6 +140,22 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<DataSource> {
     }
 
     @Override
+    public boolean put(RevObject object) {
+        // JD: Since (for now) we can't support dynamic method interceptors we have to do the job
+        // of ObjectDatabasePutInterceptor manually
+        if (super.put(object)) {
+            if (graphdb != null) {
+                if (RevObject.TYPE.COMMIT.equals(object.getType())) {
+                    RevCommit commit = (RevCommit) object;
+                    graphdb.put(commit.getId(), commit.getParentIds());
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public void put(final String id, final InputStream obj, DataSource ds) {
         new DbOp<Void>() {
             @Override
@@ -166,45 +187,45 @@ public class XerialObjectDatabase extends SQLiteObjectDatabase<DataSource> {
         }.run(ds);
     }
 
-    /**
-     * Override to optimize batch insert.
-     */
-    @Override
-    public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
-        Preconditions.checkState(isOpen(), "No open database connection");
-        new DbOp<Void>() {
-            @Override
-            protected boolean isAutoCommit() {
-                return false;
-            }
-
-            @Override
-            protected Void doRun(Connection cx) throws SQLException, IOException {
-                // use INSERT OR IGNORE to deal with duplicates cleanly
-                String sql = format("INSERT OR IGNORE INTO %s (object,id) VALUES (?,?)", OBJECTS);
-                PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
-
-                // partition the objects into chunks for batch processing
-                Iterator<List<? extends RevObject>> it = (Iterator) Iterators.partition(objects,
-                        partitionSize);
-
-                while (it.hasNext()) {
-                    List<? extends RevObject> objs = it.next();
-                    for (RevObject obj : objs) {
-                        stmt.setBytes(1, ByteStreams.toByteArray(writeObject(obj)));
-                        stmt.setString(2, obj.getId().toString());
-                        stmt.addBatch();
-                    }
-
-                    notifyInserted(stmt.executeBatch(), objs, listener);
-                    stmt.clearParameters();
-                }
-                cx.commit();
-
-                return null;
-            }
-        }.run(cx);
-    }
+//    /**
+//     * Override to optimize batch insert.
+//     */
+//    @Override
+//    public void putAll(final Iterator<? extends RevObject> objects, final BulkOpListener listener) {
+//        Preconditions.checkState(isOpen(), "No open database connection");
+//        new DbOp<Void>() {
+//            @Override
+//            protected boolean isAutoCommit() {
+//                return false;
+//            }
+//
+//            @Override
+//            protected Void doRun(Connection cx) throws SQLException, IOException {
+//                // use INSERT OR IGNORE to deal with duplicates cleanly
+//                String sql = format("INSERT OR IGNORE INTO %s (object,id) VALUES (?,?)", OBJECTS);
+//                PreparedStatement stmt = open(cx.prepareStatement(log(sql, LOG)));
+//
+//                // partition the objects into chunks for batch processing
+//                Iterator<List<? extends RevObject>> it = (Iterator) Iterators.partition(objects,
+//                        partitionSize);
+//
+//                while (it.hasNext()) {
+//                    List<? extends RevObject> objs = it.next();
+//                    for (RevObject obj : objs) {
+//                        stmt.setBytes(1, ByteStreams.toByteArray(writeObject(obj)));
+//                        stmt.setString(2, obj.getId().toString());
+//                        stmt.addBatch();
+//                    }
+//
+//                    notifyInserted(stmt.executeBatch(), objs, listener);
+//                    stmt.clearParameters();
+//                }
+//                cx.commit();
+//
+//                return null;
+//            }
+//        }.run(cx);
+//    }
 
     void notifyInserted(int[] inserted, List<? extends RevObject> objects, BulkOpListener listener) {
         for (int i = 0; i < inserted.length; i++) {

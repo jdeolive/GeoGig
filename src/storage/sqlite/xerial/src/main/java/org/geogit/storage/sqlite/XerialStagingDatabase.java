@@ -36,7 +36,7 @@ public class XerialStagingDatabase extends SQLiteStagingDatabase<DataSource> {
 
     @Inject
     public XerialStagingDatabase(ObjectDatabase repoDb, ConfigDatabase configdb, Platform platform) {
-        super(repoDb, new XerialObjectDatabase(configdb, platform, "stage"), configdb, platform);
+        super(repoDb, new XerialObjectDatabase(configdb, null, platform, "stage"), configdb, platform);
     }
 
     @Override
